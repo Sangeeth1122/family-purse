@@ -32,7 +32,7 @@ export default async function FamilyPage() {
   );
   const allTxns = (txnsRes.data ?? []) as Transaction[];
 
-  const { from, to, label } = monthBounds();
+  const { from, to } = monthBounds();
   const spend = familySpend(allTxns, from, to);
   const spendByMember = Object.fromEntries(
     memberSpend(reportTransactions(allTxns, from, to)),
@@ -45,7 +45,6 @@ export default async function FamilyPage() {
       members={members}
       spend={spend}
       memberSpend={spendByMember}
-      label={label}
       isAdmin={meRow.role === "admin"}
     />
   );

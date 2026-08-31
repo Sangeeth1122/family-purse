@@ -135,7 +135,7 @@ export default function SpendCalendarView({
 
         return (
           <>
-            <div className="card mx-5 mt-4 p-5 flex flex-col items-center">
+            <div className="card mx-5 mt-4 px-6 py-5 flex flex-col items-center">
               <div className="w-full flex items-start justify-between mb-4">
                 <div className="text-[12.5px] font-semibold t-secondary">
                   Spending by day
@@ -194,7 +194,7 @@ export default function SpendCalendarView({
                       }}
                       onClick={() => setSelectedDay(b?.date ?? null)}
                     >
-                      <span className="absolute top-[3px] left-[5px] text-[8px] font-semibold opacity-75">
+                      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold opacity-75">
                         {d.num}
                       </span>
                     </button>

@@ -189,7 +189,7 @@ export default function ProjectMembersSheet({
           notAdded.length > 0 && (
             <button
               type="button"
-              className="btn btn-outline w-full mb-4"
+              className="btn btn-ghost w-full mb-4"
               onClick={() => setAdding(true)}
             >
               <IconUserPlus size={15} /> Add person

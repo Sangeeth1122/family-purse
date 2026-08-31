@@ -69,7 +69,7 @@ export default function ReportsHome() {
 
   return (
     <div className="min-h-screen pb-24">
-      <header className="px-5 pt-6 pb-1">
+      <header className="px-5 pt-5 pb-1">
         <h1 className="text-[20px] font-bold">Reports</h1>
         <p className="text-[13px] t-secondary font-medium mt-1">
           One chart per question — pick what you want to know.

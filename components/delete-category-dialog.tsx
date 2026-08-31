@@ -52,14 +52,14 @@ export default function DeleteCategoryDialog({
       aria-labelledby="delete-category-title"
     >
       <div className="dialog" onClick={(e) => e.stopPropagation()}>
-        <div className="w-11 h-11 rounded-full bg-[rgba(176,86,47,0.12)] flex items-center justify-center mx-auto mb-3">
-          <IconTrash size={19} className="t-red" />
+        <div className="w-12 h-12 rounded-full bg-[rgba(176,86,47,0.12)] flex items-center justify-center mx-auto mb-3.5">
+          <IconTrash size={22} className="t-red" />
         </div>
-        <h2 id="delete-category-title" className="text-[16px] font-bold mb-1 text-center">Delete {category.name}?</h2>
+        <h2 id="delete-category-title" className="text-[16px] font-bold mb-2 text-center">Delete {category.name}?</h2>
 
         {needsReassign ? (
           <>
-            <p className="text-[12.5px] font-semibold t-secondary leading-relaxed text-center mb-4">
+            <p className="text-[13.5px] font-medium t-secondary leading-relaxed text-center mb-4">
               {tagged} P&amp;L {tagged === 1 ? "transaction uses" : "transactions use"} it.
               Reassign them to another category before deleting — their amounts stay
               exactly as recorded, just with a new label.
@@ -82,7 +82,7 @@ export default function DeleteCategoryDialog({
             </p>
           </>
         ) : (
-          <p className="text-[12.5px] font-semibold t-secondary leading-relaxed text-center mb-5">
+          <p className="text-[13.5px] font-medium t-secondary leading-relaxed text-center mb-5">
             No transactions use it right now, so this is clean. Any budget set for it
             is removed too.
           </p>

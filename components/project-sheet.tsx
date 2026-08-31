@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useEsc } from "@/components/use-esc";
 import { useRouter } from "next/navigation";
 import {
-  IconCrown,
+  IconCheck,
   IconPlus,
   IconUsers,
   IconX,
@@ -172,126 +172,117 @@ function ProjectSheetBody({
         />
       </label>
 
-      <div className="field">
-        <span className="field-label">Overall budget — optional</span>
-        <div className="relative">
-          <span
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            ₹
-          </span>
+      <div className="flex gap-3">
+        <div className="field flex-1">
+          <span className="field-label">Budget (optional)</span>
+          <div className="relative">
+            <span
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              ₹
+            </span>
+            <input
+              className="input pl-8"
+              aria-label="Overall project budget in rupees"
+              inputMode="decimal"
+              value={budget}
+              onChange={(e) => setBudget(toINRInput(e.target.value))}
+              placeholder="0"
+            />
+          </div>
+        </div>
+
+        <div className="field flex-1">
+          <span className="field-label">Target date</span>
           <input
-            className="input pl-8"
-            aria-label="Overall project budget in rupees"
-            inputMode="decimal"
-            value={budget}
-            onChange={(e) => setBudget(toINRInput(e.target.value))}
-            placeholder="0"
+            className="input"
+            type="date"
+            aria-label="Project target date"
+            value={targetDate}
+            onChange={(e) => setTargetDate(e.target.value)}
           />
         </div>
-        <p className="field-hint">
-          Leave blank to run the project without an overall budget.
-        </p>
       </div>
-
-      <label className="field">
-        <span className="field-label">Target date — optional</span>
-        <input
-          className="input"
-          type="date"
-          aria-label="Project target date"
-          value={targetDate}
-          onChange={(e) => setTargetDate(e.target.value)}
-        />
-      </label>
 
       {!editing && (
         <div className="field">
           <span className="field-label">
-            Who&apos;s on the team <IconUsers size={13} />
+            Who&apos;s involved <IconUsers size={13} />
           </span>
-          <div className="avatar-row" style={{ overflowX: "auto" }}>
-            {users.map((u) => (
-              <div
-                key={u.id}
-                className={`avatar-chip ${included(u.id) ? "selected" : ""}`}
-                style={{
-                  flex: "0 0 auto",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 6,
-                  width: 60,
-                }}
-              >
-                <button
-                  type="button"
-                  aria-pressed={included(u.id)}
-                  aria-label={`Toggle ${u.name} on the team`}
-                  className="avatar"
-                  style={{ width: 48, height: 48, position: "relative" }}
-                  onClick={() => toggle(u)}
+          <div className="flex flex-col gap-2">
+            {users.map((u) => {
+              const isIn = included(u.id);
+              return (
+                <div
+                  key={u.id}
+                  className="flex items-center justify-between rounded-lg border px-3.5 py-[11px]"
+                  style={{ background: "var(--card)", borderColor: "var(--border)" }}
                 >
-                  {initials(u.name)}
-                  {u.id === meId && (
-                    <IconCrown
-                      size={13}
+                  <button
+                    type="button"
+                    onClick={() => toggle(u)}
+                    className="flex items-center gap-2.5 min-w-0 flex-1 text-left"
+                    aria-pressed={isIn}
+                  >
+                    <div
+                      className="rounded-full flex items-center justify-center shrink-0"
+                      style={{ width: 32, height: 32, fontSize: 12, fontWeight: 700, background: "rgba(0,0,0,0.08)", color: "var(--text-secondary)" }}
+                    >
+                      {initials(u.name)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[14px] font-semibold truncate">
+                        {u.name}
+                        {u.id === meId ? " (you)" : ""}
+                      </div>
+                      <div className="text-[11px] font-semibold t-tertiary">
+                        {u.id === meId ? "Owner" : "Contributor"}
+                      </div>
+                    </div>
+                  </button>
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    {isIn && u.id !== meId && (
+                      <select
+                        className="input"
+                        style={{ padding: "6px 8px", fontSize: 12, width: "auto" }}
+                        aria-label={`Role for ${u.name}`}
+                        value={selected.find((s) => s.user.id === u.id)?.role ?? "contributor"}
+                        onChange={(e) =>
+                          setRole(u.id, e.target.value as ProjectRole)
+                        }
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {(Object.keys(ROLE_LABEL) as ProjectRole[]).map((r) => (
+                          <option key={r} value={r}>
+                            {ROLE_LABEL[r]}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <button
+                      type="button"
+                      aria-label={`Select ${u.name}`}
+                      aria-pressed={isIn}
+                      onClick={() => toggle(u)}
+                      className="h-[22px] w-[22px] rounded-md flex items-center justify-center"
                       style={{
-                        position: "absolute",
-                        right: -4,
-                        top: -4,
-                        color: "var(--blue)",
+                        background: isIn ? "var(--text)" : "transparent",
+                        color: isIn ? "var(--bg)" : "transparent",
+                        border: "1.5px solid var(--border)",
                       }}
-                    />
-                  )}
-                </button>
-                <span>{u.name}</span>
-              </div>
-            ))}
+                    >
+                      <IconCheck size={13} stroke={3} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
           <p className="field-hint">
-            You&apos;re locked in as owner. Everyone else joins as contributor
-            unless you change their role.
+            You&apos;re locked in as owner. Transactions tagged to this project
+            count toward every selected member&apos;s shared reports.
           </p>
-          {selected.length > 0 && (
-            <div className="mt-3 space-y-2">
-              {selected.map((s) => (
-                <div
-                  key={s.user.id}
-                  className="flex items-center gap-3 rounded-lg p-2"
-                  style={{ background: "rgba(0,0,0,0.03)" }}
-                >
-                  <div
-                    className="avatar"
-                    style={{ width: 30, height: 30, fontSize: 11 }}
-                  >
-                    {initials(s.user.name)}
-                  </div>
-                  <span className="flex-1 text-[13px] font-semibold">
-                    {s.user.name}
-                    {s.user.id === meId ? " (you)" : ""}
-                  </span>
-                  <select
-                    className="input"
-                    style={{ padding: "6px 8px", fontSize: 12, width: "auto" }}
-                    aria-label={`Role for ${s.user.name}`}
-                    disabled={s.user.id === meId}
-                    value={s.role}
-                    onChange={(e) =>
-                      setRole(s.user.id, e.target.value as ProjectRole)
-                    }
-                  >
-                    {(Object.keys(ROLE_LABEL) as ProjectRole[]).map((r) => (
-                      <option key={r} value={r}>
-                        {ROLE_LABEL[r]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
 
@@ -320,7 +311,7 @@ function ProjectSheetBody({
       {error && <p className="text-[12.5px] font-semibold t-red mb-3">{error}</p>}
 
       <button className="btn btn-primary w-full" disabled={busy}>
-        {busy ? "Saving…" : editing ? "Save changes" : "Create Project"}
+        {busy ? "Saving…" : editing ? "Save changes" : "Create project"}
       </button>
     </form>
   );
@@ -354,7 +345,7 @@ export default function ProjectSheet({
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="handle" />
         <div className="sheet-head">
-          <h2 id="project-sheet-title">{project ? "Edit project" : "Add Project"}</h2>
+          <h2 id="project-sheet-title">{project ? "Edit project" : "New project"}</h2>
           <button type="button" className="close-btn" aria-label="Close" onClick={onClose}>
             <IconX size={16} />
           </button>
@@ -374,11 +365,12 @@ export function AddProjectButton() {
         type="button"
         aria-label="Add project"
         onClick={() => setOpen(true)}
-        className="fixed left-1/2 -translate-x-1/2 z-40 w-[54px] h-[54px] rounded-full shadow-lg flex items-center justify-center"
+        className="fixed z-40 w-[52px] h-[52px] rounded-full shadow-lg flex items-center justify-center"
         style={{
           background: "var(--text)",
           color: "var(--bg)",
-          bottom: "104px",
+          bottom: "100px",
+          right: "calc(50% - 195px)",
         }}
       >
         <IconPlus size={22} stroke={2.5} />

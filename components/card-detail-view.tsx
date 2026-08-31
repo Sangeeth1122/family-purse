@@ -93,7 +93,7 @@ export default function CardDetailView({
   return (
     <div className="min-h-screen pb-24">
       {/* ---------- Top bar ---------- */}
-      <div className="flex items-center justify-between px-5 pt-6 pb-2">
+      <div className="flex items-center justify-between px-5 pt-5 pb-2">
         <button
           type="button"
           className="icon-btn"
@@ -258,11 +258,11 @@ export default function CardDetailView({
           aria-labelledby="delete-card-title"
         >
           <div className="dialog">
-            <div className="w-11 h-11 rounded-full bg-[rgba(176,86,47,0.12)] flex items-center justify-center mx-auto mb-3">
-              <span className="text-[18px] t-red">!</span>
+            <div className="w-12 h-12 rounded-full bg-[rgba(176,86,47,0.12)] flex items-center justify-center mx-auto mb-3.5">
+              <IconTrash size={22} className="t-red" />
             </div>
-            <h2 id="delete-card-title" className="text-[16px] font-bold mb-1">Delete card?</h2>
-            <p className="text-[12.5px] font-semibold t-secondary leading-relaxed mb-5">
+            <h2 id="delete-card-title" className="text-[16px] font-bold mb-2">Delete card?</h2>
+            <p className="text-[13.5px] font-medium t-secondary leading-relaxed mb-5">
               {balance > 0
                 ? `${card.name} still has ${formatINRExact(balance)} outstanding. Deleting it removes the card but keeps its transactions in the family records.`
                 : `This removes ${card.name} from your cards. Its transactions stay in the family records.`}
@@ -296,22 +296,22 @@ export default function CardDetailView({
           aria-labelledby="writeoff-title"
         >
           <div className="dialog">
-            <div className="w-11 h-11 rounded-full bg-[rgba(176,86,47,0.12)] flex items-center justify-center mx-auto mb-3">
-              <IconScale size={20} className="t-red" />
+            <div className="w-11 h-11 rounded-full bg-[rgba(176,86,47,0.12)] flex items-center justify-center mx-auto mb-3.5">
+              <IconScale size={19} className="t-red" />
             </div>
-            <h2 id="writeoff-title" className="text-[16px] font-bold mb-1">
+            <h2 id="writeoff-title" className="text-[16px] font-bold mb-1.5">
               Write off {formatINRExact(balance)} to zero?
             </h2>
-            <p className="text-[12.5px] font-semibold t-secondary leading-relaxed mb-4">
-              This closes {card.name}&apos;s outstanding to ₹0. No payment is
-              created — it is logged as a family Balance Write-off you can
+            <p className="text-[13px] font-medium t-secondary leading-relaxed mb-4">
+              This closes {card.name}&apos;s outstanding to <b className="font-bold t-primary">₹0</b>. No payment is
+              created — it is logged as a family <b className="font-bold t-primary">Balance Write-off</b> you can
               audit later, and its transactions stay untouched.
             </p>
             <label className="text-[11.5px] font-bold uppercase tracking-wide t-secondary block mb-1.5">
               Remarks <span className="t-red">*</span>
             </label>
             <textarea
-              className="input w-full min-h-[96px] resize-none"
+              className="input w-full min-h-[70px] resize-none"
               placeholder="Why is this balance being written off?"
               value={writeoffRemark}
               onChange={(e) => setWriteoffRemark(e.target.value)}

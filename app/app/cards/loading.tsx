@@ -1,7 +1,7 @@
 export default function Loading() {
   return (
     <div className="min-h-screen pb-24">
-      <div className="flex items-center justify-between px-5 pt-6 pb-4">
+      <div className="flex items-center justify-between px-5 pt-5 pb-4">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-[rgba(0,0,0,0.05)]" />
           <div className="w-16 h-5 rounded bg-[rgba(0,0,0,0.05)]" />

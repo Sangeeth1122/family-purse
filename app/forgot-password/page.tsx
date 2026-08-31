@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { IconArrowLeft } from "@tabler/icons-react";
+import { IconArrowLeft, IconMailCheck } from "@tabler/icons-react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export default function ForgotPasswordPage() {
@@ -41,10 +41,10 @@ export default function ForgotPasswordPage() {
 
       {sent ? (
         <div className="flex flex-col items-center text-center mt-10">
-          <div className="w-16 h-16 rounded-full bg-[rgba(74,122,94,0.12)] flex items-center justify-center mb-5">
-            <span className="text-[24px]">✓</span>
+          <div className="w-14 h-14 rounded-2xl bg-[rgba(74,122,94,0.1)] flex items-center justify-center mb-4">
+            <IconMailCheck size={26} className="t-green" />
           </div>
-          <h2 className="text-[17px] font-bold mb-1">Check your email</h2>
+          <h2 className="text-[16px] font-bold mb-1">Check your email</h2>
           <p className="text-[13px] font-semibold t-secondary leading-relaxed">
             We&apos;ve sent a reset link to <b className="t-primary">{email}</b>. It&apos;ll
             expire in 30 minutes.

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { IconChevronRight } from "@tabler/icons-react";
+import { IconFilter } from "@tabler/icons-react";
 import { formatINR, initials } from "@/lib/format";
 import { AddProjectButton } from "@/components/project-sheet";
 import type { ProjectRole } from "@/lib/types";
@@ -37,37 +37,6 @@ function chipOf(p: ProjectCardData) {
   );
 }
 
-function ProgressArea({ p }: { p: ProjectCardData }) {
-  if (p.budget === null || p.budget <= 0) {
-    return (
-      <p className="text-[12px] font-semibold t-secondary mt-2">
-        {formatINR(p.spent)} spent · no budget set
-      </p>
-    );
-  }
-  const fill = Math.min(100, p.pctUsed ?? 0);
-  return (
-    <div className="mt-3">
-      <div className="h-[7px] rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.07)" }}>
-        <div
-          className="h-full rounded-full"
-          style={{
-            width: `${fill}%`,
-            background: p.over
-              ? "var(--red)"
-              : "linear-gradient(90deg,var(--blue),#5a8be0)",
-          }}
-        />
-      </div>
-      <p className={`text-[12px] font-semibold mt-1.5 ${p.over ? "t-red" : "t-secondary"}`}>
-        {formatINR(p.spent)} of {formatINR(p.budget)}
-        {p.pctUsed != null ? ` · ${p.pctUsed}% used` : ""}
-        {p.over ? " · over budget" : ""}
-      </p>
-    </div>
-  );
-}
-
 export default function ProjectsView({
   projects,
   isAdmin,
@@ -82,21 +51,21 @@ export default function ProjectsView({
 
   return (
     <div className="min-h-screen pb-28">
-      <div className="flex items-center gap-3 px-5 pt-6 pb-4">
-        <Link href="/app/dashboard" className="icon-btn" aria-label="Back">
-          <span aria-hidden="true" className="text-[16px] leading-none">‹</span>
-        </Link>
-        <h1 className="text-[17px] font-bold">Projects</h1>
+      <div className="flex items-center justify-between px-5 pt-5 pb-2">
+        <h1 className="text-[20px] font-bold" style={{ letterSpacing: "-0.01em" }}>Projects</h1>
+        <button type="button" className="icon-btn" style={{ width: 36, height: 36 }} aria-label="Filter">
+          <IconFilter size={18} />
+        </button>
       </div>
 
       {projects.length > 0 && (
-        <div className="px-5 flex gap-2 mb-4">
+        <div className="px-5 pt-3 flex gap-2">
           {(
             [
-              ["all", `All ${projects.length}`],
-              ["active", activeCount ? `Active ${activeCount}` : "Active"],
-              ["archived", archivedCount ? `Archived ${archivedCount}` : "Archived"],
-            ] as const
+              ["all", `All ${projects.length}`] as const,
+              ["active", activeCount ? `Active ${activeCount}` : "Active"] as const,
+              ["archived", archivedCount ? `Completed ${archivedCount}` : "Completed"] as const,
+            ]
           ).map(([key, label]) => (
             <button
               key={key}
@@ -127,7 +96,7 @@ export default function ProjectsView({
           </p>
         </div>
       ) : (
-        <div className="px-5 space-y-3">
+        <div className="px-5 space-y-2.5 pt-2.5">
           {shown.map((p) => {
             const avatarMembers = p.members.slice(0, 3);
             const overflow = p.members.length - avatarMembers.length;
@@ -137,53 +106,69 @@ export default function ProjectsView({
                 href={`/app/projects/${p.id}`}
                 className="card p-4 block"
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-[15px] font-bold truncate">{p.name}</h2>
-                      {chipOf(p)}
-                    </div>
-                    <p className="text-[11.5px] font-semibold t-tertiary mt-1">
+                    <h2 className="text-[15.5px] font-bold truncate">{p.name}</h2>
+                    <p className="text-[12px] font-semibold t-tertiary mt-0.5">
                       {p.txnCount} {p.txnCount === 1 ? "transaction" : "transactions"}
                       {p.target_date ? ` · target ${p.target_date}` : ""}
                     </p>
                   </div>
-                  <IconChevronRight size={16} className="t-tertiary flex-shrink-0 mt-1" />
+                  {chipOf(p)}
                 </div>
 
-                <ProgressArea p={p} />
+                {p.budget !== null && p.budget > 0 && (
+                  <div className="bar-track mb-2.5">
+                    <div
+                      className="bar-fill"
+                      style={{ width: `${Math.min(100, p.pctUsed ?? 0)}%` }}
+                    />
+                  </div>
+                )}
 
-                <div className="flex items-center mt-3">
-                  <div className="flex -space-x-1.5">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[14.5px] font-bold num">
+                    {formatINR(p.spent)}{" "}
+                    <span className="text-[12px] font-semibold t-tertiary">
+                      {p.budget !== null && p.budget > 0
+                        ? `/ ${formatINR(p.budget)} budget${p.over ? " · over" : ""}`
+                        : "no budget set"}
+                    </span>
+                  </span>
+                  <div className="flex items-center">
                     {avatarMembers.map((m, i) => (
-                      <div
+                      <span
                         key={`${p.id}-${i}`}
                         className="avatar"
-                        style={{ width: 26, height: 26, fontSize: 10, border: "2px solid var(--bg)" }}
+                        style={{
+                          width: 22,
+                          height: 22,
+                          fontSize: 9.5,
+                          border: "2px solid var(--card)",
+                          marginLeft: i === 0 ? 0 : -7,
+                        }}
                         title={`${m.name} · ${ROLE_LABEL[m.role]}`}
                       >
                         {initials(m.name)}
-                      </div>
+                      </span>
                     ))}
                     {overflow > 0 && (
-                      <div
+                      <span
                         className="avatar"
                         style={{
-                          width: 26,
-                          height: 26,
-                          fontSize: 10,
-                          border: "2px solid var(--bg)",
+                          width: 22,
+                          height: 22,
+                          fontSize: 9.5,
+                          marginLeft: -7,
+                          border: "2px solid var(--card)",
                           background: "var(--border)",
                           color: "var(--text-secondary)",
                         }}
                       >
                         +{overflow}
-                      </div>
+                      </span>
                     )}
                   </div>
-                  <span className="text-[11px] font-semibold t-tertiary ml-2">
-                    {p.members.length} {p.members.length === 1 ? "person" : "people"}
-                  </span>
                 </div>
               </Link>
             );

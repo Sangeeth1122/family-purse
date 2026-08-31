@@ -1,16 +1,13 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { createElement } from "react";
 import {
   IconBell,
-  IconFolder,
   IconTrendingUp,
-  IconArrowUpRight,
-  IconArrowDownRight,
-  IconTransfer,
-  IconUsers,
 } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatINR, formatFullDate, initials } from "@/lib/format";
+import { categoryIcon } from "@/lib/category-icons";
 import { summarizeMonth, memberSpend, reportTransactions } from "@/lib/report";
 import RemindersBell from "@/components/reminders/reminders-panel";
 import type { Budget, Category, Reminder, Transaction, UserRow } from "@/lib/types";
@@ -85,85 +82,61 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-6 pb-1">
+      <div className="flex items-center justify-between px-5 pt-5 pb-1">
         <div>
-          <div className="text-[12.5px] font-semibold t-secondary">{greeting()}</div>
-          <h1 className="text-[20px] font-bold tracking-tight">Family Purse</h1>
+          <div className="text-[13px] font-semibold t-secondary">{greeting()}</div>
+          <h1 className="text-[17px] font-bold">Family Purse</h1>
         </div>
-        <div className="flex items-center gap-1">
-          <Link href="/app/family" className="icon-btn" aria-label="Family">
-            <IconUsers size={19} />
-          </Link>
-          <Link href="/app/projects" className="icon-btn" aria-label="Projects">
-            <IconFolder size={19} />
-          </Link>
-          <Link href="/app/loans" className="icon-btn" aria-label="Loans">
-            <IconTransfer size={20} />
-          </Link>
-          <RemindersBell
-            reminders={reminders}
-            isAdmin={me?.role === "admin"}
-          />
-        </div>
+        <RemindersBell
+          reminders={reminders}
+          isAdmin={me?.role === "admin"}
+        />
       </div>
 
       {/* Balance card */}
-      <div className="px-5 mt-3">
-        <div className="card p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-[11.5px] font-bold uppercase tracking-wide t-secondary">
-              {label}
-            </span>
-            <span className="badge green">
-              {report.savingsRate !== null ? `${report.savingsRate}% saved` : "No income yet"}
-            </span>
-          </div>
-          <div className="text-[34px] font-bold num mt-1">
-            {report.net >= 0 ? "+" : "−"}
-            {formatINR(report.net)}
-          </div>
+      <div className="card mx-5 mt-3 p-4">
+        <div className="flex items-center justify-between">
+          <span className="text-[13px] font-semibold t-secondary">Family balance</span>
+        </div>
+        <div className="text-[29px] font-semibold num mt-1.5" style={{ letterSpacing: "-0.3px" }}>
+          {report.net >= 0 ? "+" : "−"}
+          {formatINR(Math.abs(report.net))}
+        </div>
 
-          <div className="flex items-center gap-4 mt-4">
-            <span className="flex items-center gap-1.5 text-[12.5px] font-bold t-green">
-              <IconArrowUpRight size={15} /> {formatINR(report.income)} in
-            </span>
-            <span className="flex items-center gap-1.5 text-[12.5px] font-bold t-red">
-              <IconArrowDownRight size={15} /> {formatINR(report.expense)} out
-            </span>
-          </div>
+        <div className="flex items-center gap-4 mt-2">
+          <span className="text-[12px] font-semibold t-green">
+            {formatINR(report.income)} in
+          </span>
+          <span className="text-[12px] font-semibold t-red">
+            {formatINR(report.expense)} out
+          </span>
         </div>
       </div>
 
       {/* Budget pace */}
       {pace.length > 0 && (
-        <div className="px-5 mt-3">
-          <Link href="/app/budgets" className="card p-5 block">
-            <div className="flex items-center justify-between">
-              <span className="text-[11.5px] font-bold uppercase tracking-wide t-secondary">
+        <div className="card mx-5 mt-2.5 p-3.5">
+          <Link href="/app/budgets" className="block">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[12px] font-semibold t-secondary">
                 Personal budget pace
               </span>
-              <span className="text-[13px] font-bold num">
+              <span className="text-[12px] font-semibold t-primary num">
                 {formatINR(paceTotal)} / {formatINR(budgetTotal)}
               </span>
             </div>
-            <div className="bar-track mt-3">
+            <div className="h-[6px] rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.07)", marginBottom: 8 }}>
               <div
-                className="bar-fill"
+                className="h-full"
                 style={{
                   width: `${Math.min(100, (paceTotal / Math.max(budgetTotal, 1)) * 100)}%`,
-                  background: "var(--green)",
+                  background: "var(--red)",
                 }}
               />
             </div>
-            {topMover && (
-              <div className="flex items-center gap-2 mt-3 text-[11.5px] font-semibold t-secondary">
-                <span className="dot" style={{ background: topMover.category.color }} />
-                <span className="truncate">{topMover.category.name}</span>
-                <span className="t-primary flex-shrink-0">
-                  {formatINR(topMover.spent)} of {formatINR(topMover.budget)}
-                </span>
-              </div>
-            )}
+            <div className="text-[12px] t-secondary">
+              {Math.round((paceTotal / Math.max(budgetTotal, 1)) * 100)}% of budget used
+            </div>
           </Link>
         </div>
       )}
@@ -201,36 +174,58 @@ export default async function DashboardPage() {
         </>
       )}
 
+      {/* Top mover insight */}
+      {topMover ? (
+        <div className="card mx-5 mt-2.5 p-3.5 flex items-center gap-2.5">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: "rgba(176,86,47,0.08)", color: "var(--red)" }}
+          >
+            <IconTrendingUp size={16} />
+          </div>
+          <div>
+            <div className="text-[12px] font-semibold t-primary">
+              {topMover.category.name} is your top mover
+            </div>
+            <div className="text-[11px] font-semibold t-secondary mt-0.5">
+              {formatINR(topMover.spent)} of {formatINR(topMover.budget)} budget used
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* Where it went */}
       <div className="px-5">
         <div className="flex items-center justify-between pt-5">
-          <div className="text-[15px] font-bold">Where it went</div>
-          <Link href="/app/reports" className="text-[12px] font-bold t-secondary">
+          <div className="text-[13px] font-bold">Where it went</div>
+          <Link href="/app/reports" className="text-[12px] font-semibold t-secondary">
             Full report
           </Link>
         </div>
       </div>
 
       {report.byCategory.length > 0 ? (
-        <div className="card mx-5 mt-3 p-5">
+        <div className="card mx-5 mt-2 px-3.5 py-3">
           {report.byCategory.map((row, i) => {
             const widest = report.byCategory[0].amount;
             return (
               <Link
                 key={row.categoryId ?? "uncat"}
                 href={`/app/categories/${row.categoryId ?? "uncategorised"}`}
-                className={i > 0 ? "block mt-4" : "block"}
+                className={i > 0 ? "block mt-2.5" : "block"}
               >
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="flex items-center gap-2 text-[13px] font-bold">
-                    <span className="dot" style={{ background: row.color }} />
+                <div className="flex items-center justify-between mb-1">
+                  <span className="flex items-center gap-2 text-[12px] font-semibold">
+                    <span className="txn-icon" style={{ width: 24, height: 24, borderRadius: 6 }}>
+                      {createElement(categoryIcon(row.name, "expense"), { size: 14, stroke: 1.8 })}
+                    </span>
                     {row.name}
                   </span>
-                  <span className="text-[13.5px] font-bold num">{formatINR(row.amount)}</span>
+                  <span className="text-[12px] font-semibold num">{formatINR(row.amount)}</span>
                 </div>
-                <div className="bar-track">
+                <div className="h-[5px] rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.06)", marginBottom: 8 }}>
                   <div
-                    className="bar-fill"
+                    className="h-full"
                     style={{ width: `${Math.max(4, (row.amount / Math.max(widest, 1)) * 100)}%`, background: row.color }}
                   />
                 </div>
@@ -239,7 +234,7 @@ export default async function DashboardPage() {
           })}
         </div>
       ) : (
-        <div className="card mx-5 mt-3 p-6 text-center">
+        <div className="card mx-5 mt-2 p-6 text-center">
           <p className="text-[13.5px] font-bold mb-1">No spending this month</p>
           <p className="text-[12.5px] font-semibold t-secondary">
             Tap + to log your first expense or revenue.
@@ -282,23 +277,6 @@ export default async function DashboardPage() {
           </div>
         </div>
       )}
-
-      {/* Top mover insight */}
-      {topMover ? (
-        <div className="card mx-5 mt-5 p-4 flex items-center gap-3">
-          <div className="txn-icon" style={{ color: "var(--green)" }}>
-            <IconTrendingUp size={17} />
-          </div>
-          <div>
-            <div className="text-[13.5px] font-bold">
-              {topMover.category.name} is your top mover
-            </div>
-            <div className="text-[12px] font-semibold t-secondary mt-0.5">
-              {formatINR(topMover.spent)} of {formatINR(topMover.budget)} budget used
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       <div className="text-center text-[11px] font-semibold t-tertiary pt-8 pb-2">
         {label} · {me?.name ?? "You"}

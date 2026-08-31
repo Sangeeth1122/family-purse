@@ -56,7 +56,7 @@ export default async function CardsPage() {
 
   return (
     <div className="min-h-screen pb-24">
-      <div className="flex items-center justify-between px-5 pt-6 pb-4">
+      <div className="flex items-center justify-between px-5 pt-5 pb-4">
         <div className="flex items-center gap-3">
           <Link href="/app/dashboard" className="icon-btn" aria-label="Back">
             <span aria-hidden="true" className="text-[16px] leading-none">‹</span>
@@ -142,7 +142,7 @@ export default async function CardsPage() {
 function ErrorState({ message }: { message: string }) {
   return (
     <div className="min-h-screen pb-24">
-      <div className="flex items-center gap-3 px-5 pt-6 pb-4">
+      <div className="flex items-center gap-3 px-5 pt-5 pb-4">
         <Link href="/app/dashboard" className="icon-btn" aria-label="Back">
           <span aria-hidden="true" className="text-[16px] leading-none">‹</span>
         </Link>

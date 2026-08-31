@@ -61,29 +61,36 @@ export default async function BudgetsPage() {
 
   return (
     <div className="min-h-screen pb-24">
-      <div className="flex items-center gap-3 px-5 pt-6 pb-4">
-        <Link href="/app/dashboard" className="icon-btn" aria-label="Back">
-          <span aria-hidden="true" className="text-[16px] leading-none">‹</span>
+      <div className="flex items-center gap-3 px-5 pt-5 pb-2">
+        <Link href="/app/dashboard" className="icon-btn" style={{ width: 36, height: 36 }} aria-label="Back">
+          <span aria-hidden="true" className="text-[17px] leading-none">‹</span>
         </Link>
-        <h1 className="text-[17px] font-bold">Budgets & categories</h1>
+        <h1 className="text-[20px] font-bold" style={{ letterSpacing: "-0.01em" }}>Budgets & categories</h1>
       </div>
 
-      <div className="card mx-5 p-5">
-        <div className="text-[11.5px] font-bold uppercase tracking-wide t-secondary">
-          Spent this month
+      <div className="card mx-5 mt-3 p-5 flex items-center justify-between">
+        <div>
+          <div className="text-[12px] font-semibold t-secondary uppercase" style={{ letterSpacing: "0.04em", marginBottom: 6 }}>
+            Spent this month
+          </div>
+          <div>
+            <span className="text-[22px] font-bold num">{formatINR(spendTotal)}</span>
+            {budgetTotal > 0 && (
+              <span className="text-[13px] font-semibold t-tertiary ml-1">of {formatINR(budgetTotal)}</span>
+            )}
+          </div>
         </div>
-        <div className="flex items-baseline gap-2 mt-1">
-          <span className="text-[30px] font-bold num">{formatINR(spendTotal)}</span>
-          <span className="text-[13px] font-bold t-tertiary">of {formatINR(budgetTotal)}</span>
-        </div>
-        <div className="flex items-center gap-2 mt-2">
-          <span className="badge neutral">Day {day} of {days}</span>
-          {budgetTotal > 0 && (
-            <span className="text-[11.5px] font-bold t-secondary">
-              {Math.round((spendTotal / budgetTotal) * 100)}% used
-            </span>
-          )}
-        </div>
+        {budgetTotal > 0 && (
+          <div className="text-right">
+            <div
+              className="text-[22px] font-bold num"
+              style={{ color: spendTotal > budgetTotal ? "var(--red)" : "var(--text)" }}
+            >
+              {Math.round((spendTotal / budgetTotal) * 100)}%
+            </div>
+            <div className="text-[11px] font-semibold t-tertiary">used</div>
+          </div>
+        )}
       </div>
 
       {isAdmin && me?.family_id && <AddCategorySheet familyId={me.family_id} />}
@@ -101,38 +108,41 @@ export default async function BudgetsPage() {
               className="card p-4 block"
             >
               <div className="flex items-center justify-between gap-3 min-w-0">
-                <span className="flex items-center gap-2.5 text-[14.5px] font-bold min-w-0">
-                  <span className="dot" style={{ background: row.category.color }} />
+                <span className="flex items-center gap-2.5 text-[15px] font-semibold min-w-0">
+                  <span className="dot" style={{ background: row.category.color, width: 9, height: 9 }} />
                   <span className="truncate">{row.category.name}</span>
                 </span>
-                <span className="text-[13.5px] font-bold num flex-shrink-0">
-                  <span className={over ? "t-red" : "t-primary"}>{formatINR(row.spent)}</span>
-                  {row.budget !== undefined && (
-                    <span className="t-tertiary font-semibold"> / {formatINR(row.budget)}</span>
+                <span className="text-[14px] num flex-shrink-0">
+                  <span className="font-bold t-primary">
+                    {formatINR(row.spent)}
+                  </span>
+                  {row.budget !== undefined && row.budget !== null && (
+                    <span className="font-semibold t-tertiary"> / {formatINR(row.budget)}</span>
                   )}
                 </span>
               </div>
-              <div className="bar-track mt-2.5">
-                {row.budget !== undefined && (
-                  <div
-                    className="bar-fill"
-                    style={{
-                      width: `${Math.min(100, Math.max(3, (pct ?? 0) * 100))}%`,
-                      background: over ? "var(--red)" : row.category.color,
-                    }}
-                  />
-                )}
-              </div>
-              <div className="flex items-center justify-between mt-2 text-[11px] font-bold">
-                {row.budget !== undefined ? (
-                  <span className={over ? "t-red" : "t-green"}>
-                    {over ? "Over budget" : "On pace"}
-                  </span>
-                ) : (
-                  <span className="t-tertiary">No budget set</span>
-                )}
-                <span className="t-tertiary">Day {day} of {days}</span>
-              </div>
+              {row.budget !== undefined && row.budget !== null && (
+                <>
+                  <div className="h-[5px] rounded-full overflow-hidden mt-2.5" style={{ background: "rgba(0,0,0,0.06)" }}>
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${Math.min(100, Math.max(3, (pct ?? 0) * 100))}%`, background: "var(--text)" }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between mt-2 text-[11px] font-semibold t-tertiary">
+                    <span className={over ? "t-red" : ""}>
+                      {over ? "Over budget" : "On pace"}
+                    </span>
+                    <span>Day {day} of {days}</span>
+                  </div>
+                </>
+              )}
+              {(!row.budget || row.budget === 0) && (
+                <div className="flex items-center justify-between mt-2 text-[11px] font-semibold t-tertiary">
+                  <span>No budget set</span>
+                  <span>—</span>
+                </div>
+              )}
             </Link>
           );
         })}

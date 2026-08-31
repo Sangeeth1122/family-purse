@@ -54,7 +54,7 @@ export default function EditNameSheet({
           </button>
         </div>
         <form onSubmit={onSubmit}>
-          <div className="px-5">
+          <div>
             <label className="field">
               <span className="field-label">Name</span>
               <input

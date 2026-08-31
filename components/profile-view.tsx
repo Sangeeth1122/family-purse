@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  IconCalendar,
+  IconHome,
   IconLogout,
   IconMail,
   IconPencil,
+  IconUser,
   IconUserPlus,
-  IconUsers,
 } from "@tabler/icons-react";
 import { initials } from "@/lib/format";
 import type { Family, UserRow } from "@/lib/types";
@@ -49,31 +51,32 @@ export default function ProfileView({
             <IconPencil size={12} />
           </button>
         </div>
-        <h1 className="text-[19px] font-bold mt-3">{me.name}</h1>
-        <p className="text-[12.5px] font-semibold t-secondary mt-0.5">
+        <h1 className="text-[17px] font-bold mt-3">{me.name}</h1>
+        <p className="text-[12px] font-semibold t-tertiary mt-0.5">
           {me.role === "admin" ? "Admin" : "Member"}
           {family ? ` · ${family.name}` : ""}
         </p>
       </div>
 
       <div className="card mx-5 overflow-hidden">
-        <Row k="Name" v={me.name} onTap={() => setEditingName(true)} icon={<IconPencil size={14} />} />
-        <Row k="Email" v={defaultEmail} icon={<IconMail size={15} />} />
+        <Row leftIcon={<IconUser size={16} />} k="Name" v={me.name} onTap={() => setEditingName(true)} rightIcon={<IconPencil size={14} />} />
+        <Row leftIcon={<IconMail size={16} />} k="Email" v={defaultEmail} rightIcon={<IconPencil size={14} />} />
       </div>
 
       {family && (
         <>
           <div className="section-label">Family</div>
           <div className="card mx-5 overflow-hidden">
-            <Row k="Family" v={family.name} icon={<IconUsers size={15} />} />
+            <Row leftIcon={<IconHome size={16} />} k="Family" v={family.name} />
             <Row
+              leftIcon={<IconCalendar size={16} />}
               k="Member since"
               v={new Date(me.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
             />
             <Row
+              leftIcon={<IconUserPlus size={16} />}
               k="Invite members"
               v=""
-              icon={<IconUserPlus size={15} />}
               onTap={() => router.push("/app/family/members")}
             />
           </div>
@@ -97,26 +100,32 @@ export default function ProfileView({
 }
 
 function Row({
+  leftIcon,
   k,
   v,
-  icon,
+  rightIcon,
   onTap,
 }: {
+  leftIcon?: React.ReactNode;
   k: string;
   v: string;
-  icon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
   onTap?: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onTap}
-      className="w-full flex items-center justify-between px-4 py-3.5 border-t first:border-t-0 text-left disabled:opacity-100"
+      className="w-full flex items-center gap-3 px-4 py-3.5 border-t first:border-t-0 text-left disabled:opacity-100"
       style={{ borderColor: "var(--border)", cursor: onTap ? "pointer" : "default" }}
       disabled={!onTap}
     >
-      <span className="text-[12.5px] font-bold t-secondary">{k}</span>
-      <span className="flex items-center gap-1.5 text-[13.5px] font-bold">{icon}{v}</span>
+      {leftIcon && <span className="text-[16px] t-secondary flex-shrink-0">{leftIcon}</span>}
+      <div className="flex-1 min-w-0">
+        <div className="text-[10.5px] font-bold t-tertiary uppercase tracking-[0.02em] mb-[3px]">{k}</div>
+        <div className="text-[13.5px] font-semibold">{v}</div>
+      </div>
+      {rightIcon && <span className="text-[14px] t-tertiary flex-shrink-0">{rightIcon}</span>}
     </button>
   );
 }

@@ -85,12 +85,13 @@ export default function SetupPage() {
 
   return (
     <div className="min-h-screen flex flex-col px-6 pt-14 pb-8">
-      <div className="flex flex-col items-center text-center mb-8">
-        <div className="w-14 h-14 rounded-2xl bg-[rgba(0,0,0,0.07)] flex items-center justify-center mb-4">
-          <IconWallet size={26} />
+      <div className="flex flex-col items-center text-center mb-6">
+        <div className="rounded-2xl bg-[var(--text)] text-[var(--bg)] flex items-center justify-center mb-5"
+          style={{ width: 52, height: 52 }}>
+          <IconWallet size={22} />
         </div>
         <h1 className="text-[20px] font-bold">Set up your family</h1>
-        <p className="text-[13px] font-semibold t-secondary leading-relaxed mt-2">
+        <p className="text-[13px] font-semibold t-secondary leading-relaxed mt-2 px-2">
           Family Purse is shared across the people you trust with money. Start a new family, or
           join one with an invite link.
         </p>
@@ -129,7 +130,7 @@ export default function SetupPage() {
             </div>
           </label>
           {error && <p className="text-[12.5px] font-semibold t-red mb-3">{error}</p>}
-          <button className="btn btn-primary w-full" disabled={busy}>
+          <button className="btn btn-primary w-full" style={{ padding: 15, fontSize: 15 }} disabled={busy}>
             {busy ? "Creating…" : "Create family"}
           </button>
         </form>
@@ -149,7 +150,7 @@ export default function SetupPage() {
             </div>
           </label>
           {error && <p className="text-[12.5px] font-semibold t-red mb-3">{error}</p>}
-          <button className="btn btn-primary w-full" disabled={busy}>
+          <button className="btn btn-primary w-full" style={{ padding: 15, fontSize: 15 }} disabled={busy}>
             {busy ? "Joining…" : "Join family"}
           </button>
         </form>

@@ -76,7 +76,7 @@ export default function IncomeVsExpenseView({
 
         return (
           <>
-            <div className="card mx-5 mt-4 p-5">
+            <div className="card mx-5 mt-4 px-6 py-5">
               <div className="h-[210px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart

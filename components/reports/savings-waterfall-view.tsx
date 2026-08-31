@@ -67,7 +67,7 @@ export default function SavingsWaterfallView({
 
         return (
           <>
-            <div className="card mx-5 mt-4 p-5 flex flex-col items-center">
+            <div className="card mx-5 mt-4 px-6 py-5 flex flex-col items-center">
               <div className="w-full flex items-start justify-between mb-2">
                 <div className="text-[12.5px] font-semibold t-secondary">
                   Income cascading to net savings

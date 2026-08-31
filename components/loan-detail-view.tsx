@@ -176,7 +176,7 @@ export default function LoanDetailView({
   return (
     <div className="min-h-screen pb-24">
       {/* ---------- Top bar ---------- */}
-      <div className="flex items-center justify-between px-5 pt-6 pb-2">
+      <div className="flex items-center justify-between px-5 pt-5 pb-2">
         <button
           type="button"
           className="icon-btn"
@@ -380,11 +380,11 @@ export default function LoanDetailView({
         (hasActivity === 0 ? (
           <div className="dialog-overlay">
             <div className="dialog">
-              <div className="w-11 h-11 rounded-full bg-[rgba(176,86,47,0.12)] flex items-center justify-center mx-auto mb-3">
-                <span className="text-[18px] t-red">!</span>
+              <div className="w-12 h-12 rounded-full bg-[rgba(176,86,47,0.12)] flex items-center justify-center mx-auto mb-3.5">
+                <IconTrash size={22} className="t-red" />
               </div>
-              <h2 className="text-[16px] font-bold mb-1">Delete loan?</h2>
-              <p className="text-[12.5px] font-semibold t-secondary leading-relaxed mb-5">
+              <h2 className="text-[16px] font-bold mb-2">Delete loan?</h2>
+              <p className="text-[13.5px] font-medium t-secondary leading-relaxed mb-5">
                 {b > 0
                   ? `This removes the loan and its one-time principal transfer, so the ${formatINRExact(b)} it tracked disappears. External loans drop their principal transfer too; family-member loans keep their transfer records.`
                   : `This removes the loan. Its ${loan.counterparty_user_id ? "transfer" : "one-time principal transfer"} records stay in the family ledger.`}
@@ -411,11 +411,11 @@ export default function LoanDetailView({
         ) : (
           <div className="dialog-overlay">
             <div className="dialog">
-              <div className="w-11 h-11 rounded-full bg-[rgba(176,86,47,0.12)] flex items-center justify-center mx-auto mb-3">
-                <span className="text-[18px] t-red">!</span>
+              <div className="w-12 h-12 rounded-full bg-[rgba(176,86,47,0.12)] flex items-center justify-center mx-auto mb-3.5">
+                <IconTrash size={22} className="t-red" />
               </div>
-              <h2 className="text-[16px] font-bold mb-1">Can&apos;t delete this loan</h2>
-              <p className="text-[12.5px] font-semibold t-secondary leading-relaxed mb-5">
+              <h2 className="text-[16px] font-bold mb-2">Can&apos;t delete this loan</h2>
+              <p className="text-[13.5px] font-medium t-secondary leading-relaxed mb-5">
                 {hasActivity} recorded repayment, interest, or write-off{" "}
                 {hasActivity === 1 ? "row references" : "rows reference"} it, so
                 it can&apos;t be deleted. Write off any balance to zero instead if
@@ -435,22 +435,30 @@ export default function LoanDetailView({
       {writeoffOpen && (
         <div className="dialog-overlay">
           <div className="dialog">
-            <div className="w-11 h-11 rounded-full bg-[rgba(176,86,47,0.12)] flex items-center justify-center mx-auto mb-3">
-              <IconScale size={20} className="t-red" />
+            <div className="w-11 h-11 rounded-full bg-[rgba(176,86,47,0.12)] flex items-center justify-center mx-auto mb-3.5">
+              <IconScale size={19} className="t-red" />
             </div>
-            <h2 className="text-[16px] font-bold mb-1">
+            <h2 className="text-[16px] font-bold mb-1.5">
               Write off {formatINRExact(b)} to zero?
             </h2>
-            <p className="text-[12.5px] font-semibold t-secondary leading-relaxed mb-4">
-              {isGiven
-                ? `Closing ${partyName}'s loan to ₹0 — recorded as a family Balance Write-off (a loss for you). No payment is created.`
-                : `Closing your ${partyName} loan to ₹0 — recorded as a family Balance Write-off (forgiven debt). No payment is created.`}
+            <p className="text-[13px] font-medium t-secondary leading-relaxed mb-4">
+              {isGiven ? (
+                <>
+                  Closing {partyName}&apos;s loan to <b className="font-bold t-primary">₹0</b> — recorded as a
+                  family Balance Write-off (a loss for you). No payment is created.
+                </>
+              ) : (
+                <>
+                  Closing your {partyName} loan to <b className="font-bold t-primary">₹0</b> — recorded as a
+                  family Balance Write-off (forgiven debt). No payment is created.
+                </>
+              )}
             </p>
             <label className="text-[11.5px] font-bold uppercase tracking-wide t-secondary block mb-1.5">
               Remarks <span className="t-red">*</span>
             </label>
             <textarea
-              className="input w-full min-h-[96px] resize-none"
+              className="input w-full min-h-[70px] resize-none"
               placeholder="Why is this balance being written off?"
               value={writeoffRemark}
               onChange={(e) => setWriteoffRemark(e.target.value)}

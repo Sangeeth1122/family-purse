@@ -67,7 +67,7 @@ export default function WhereMoneyWentView({
         const top = data[0];
         return (
           <>
-            <div className="card mx-5 mt-4 p-5 flex flex-col items-center">
+            <div className="card mx-5 mt-4 px-6 py-5 flex flex-col items-center">
               <div className="relative w-full h-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>

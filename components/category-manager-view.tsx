@@ -81,7 +81,7 @@ export default function CategoryManagerView({
 
   return (
     <div className="min-h-screen pb-24">
-      <div className="flex items-center gap-3 px-5 pt-6 pb-1">
+      <div className="flex items-center gap-3 px-5 pt-5 pb-1">
         <Link href="/app/family" className="icon-btn" aria-label="Back">
           <span aria-hidden="true" className="text-[16px] leading-none">‹</span>
         </Link>

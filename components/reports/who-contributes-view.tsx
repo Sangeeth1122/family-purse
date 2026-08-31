@@ -65,7 +65,7 @@ export default function WhoContributesView({
 
         return (
           <>
-            <div className="card mx-5 mt-4 p-5">
+            <div className="card mx-5 mt-4 px-6 py-5">
               <div className="text-[11.5px] font-bold uppercase tracking-wide t-secondary">
                 {range.label} · family
               </div>

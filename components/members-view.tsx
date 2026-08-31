@@ -41,19 +41,22 @@ export default function MembersView({
 
   return (
     <div className="min-h-screen pb-24">
-      <div className="flex items-center gap-3 px-5 pt-6 pb-1">
-        <Link href="/app/family" className="icon-btn" aria-label="Back">
-          <span aria-hidden="true" className="text-[16px] leading-none">‹</span>
-        </Link>
-        <h1 className="text-[17px] font-bold">Members</h1>
-        <div className="ml-auto text-[12.5px] font-semibold t-tertiary">
-          {members.length} total
+      <div className="px-5 pt-5 pb-1">
+        <div className="flex items-center gap-3">
+          <Link href="/app/family" className="icon-btn" aria-label="Back">
+            <span aria-hidden="true" className="text-[16px] leading-none">‹</span>
+          </Link>
+          <h1 className="text-[17px] font-bold">Members</h1>
+          {isAdmin && (
+            <button type="button" className="ml-auto icon-btn" aria-label="Invite members" onClick={() => setInviting(true)}>
+              <IconUserPlus size={19} />
+            </button>
+          )}
         </div>
-        {isAdmin && (
-          <button type="button" className="icon-btn" aria-label="Invite members" onClick={() => setInviting(true)}>
-            <IconUserPlus size={19} />
-          </button>
-        )}
+      </div>
+
+      <div className="px-5 mt-2">
+        <span className="text-[12px] font-semibold t-tertiary">{members.length} members</span>
       </div>
 
       <div className="px-5 mt-3">
@@ -86,19 +89,23 @@ export default function MembersView({
             return (
               <div
                 key={m.id}
-                className={`flex items-center gap-3 rounded-lg px-3 py-3 ${i > 0 ? "border-t" : ""}`}
+                className={`flex items-center gap-3 rounded-lg px-4 py-3.5 ${i > 0 ? "border-t" : ""}`}
                 style={{ borderColor: "var(--border)" }}
               >
                 <Link href={`/app/family/${m.id}`} className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="avatar" style={{ width: 38, height: 38, fontSize: 12 }}>
+                  <div className="avatar" style={{ width: 40, height: 40, fontSize: 14 }}>
                     {initials(m.name)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="txn-title">{m.name}</span>
-                      {isSelf && <span className="badge green">You</span>}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[13.5px] font-bold">{m.name}</span>
+                      {isSelf && (
+                        <span className="text-[9.5px] font-bold t-tertiary bg-[var(--bg)] border px-1.5 py-[1px] rounded-full" style={{ borderColor: "var(--border)" }}>
+                          You
+                        </span>
+                      )}
                     </div>
-                    <div className="txn-sub truncate">
+                    <div className="text-[11px] font-medium t-tertiary truncate">
                       {meta}
                       {balance && balance.count > 0 && (
                         <span className="t-red"> · owes {formatINRExact(balance.amount)}</span>
@@ -106,7 +113,14 @@ export default function MembersView({
                     </div>
                   </div>
                 </Link>
-                <span className={`badge ${isAdminUser ? "green" : "neutral"}`}>
+                <span
+                  className="text-[11px] font-bold px-3 py-1.5 rounded-full flex-shrink-0"
+                  style={
+                    isAdminUser
+                      ? { background: "var(--text)", color: "var(--bg)" }
+                      : { background: "var(--bg)", color: "var(--text-secondary)", border: "1px solid var(--border)" }
+                  }
+                >
                   {isOwner ? "Owner" : isAdminUser ? "Admin" : "Member"}
                 </span>
                 {isAdmin && !isSelf ? (

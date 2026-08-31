@@ -72,7 +72,7 @@ export default function ReportFrame({
 
   return (
     <div className="min-h-screen pb-24">
-      <header className="flex items-center gap-3 justify-between px-5 pt-6 pb-1">
+      <header className="flex items-center gap-3 justify-between px-5 pt-5 pb-1">
         <div className="flex items-center gap-3">
           <Link href={backHref} className="icon-btn" aria-label="Back">
             <IconArrowLeft size={18} stroke={2} />

@@ -6,17 +6,16 @@ import { useGoBack } from "@/components/use-go-back";
 import {
   IconArchive,
   IconDots,
-  IconFolder,
   IconLock,
   IconPencil,
   IconPlus,
   IconRefresh,
   IconTrash,
-  IconUsers,
   IconWallet,
 } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
-import { formatINR, formatINRExact, initials } from "@/lib/format";
+import { formatINRExact, initials } from "@/lib/format";
+import { categoryIcon } from "@/lib/category-icons";
 import type { Project, ProjectMember, ProjectRole } from "@/lib/types";
 import AddTransactionSheet from "@/components/add-transaction-sheet";
 import ProjectSheet from "@/components/project-sheet";
@@ -46,12 +45,6 @@ export type ProjectPerson = {
   user_id: string;
   name: string;
   role: ProjectRole;
-};
-
-const ROLE_LABEL: Record<ProjectRole, string> = {
-  owner: "Owner",
-  contributor: "Contributor",
-  viewer: "Viewer",
 };
 
 function dateLabel(date: string): string {
@@ -90,7 +83,6 @@ export default function ProjectDetailView({
   const [error, setError] = useState<string | null>(null);
 
   const spent = txnRows.filter((r) => r.isExpense).reduce((s, r) => s + r.amount, 0);
-  const revenue = txnRows.reduce((s, r) => s + (r.isExpense ? 0 : r.amount), 0);
   const budget = project.budget;
   const pct = budget != null && budget > 0 ? Math.round((spent / budget) * 100) : null;
   const over = budget != null && spent > budget;
@@ -139,16 +131,19 @@ export default function ProjectDetailView({
   return (
     <div className="min-h-screen pb-24">
       {/* ---------- Top bar ---------- */}
-      <div className="flex items-center justify-between px-5 pt-6 pb-2">
-        <button
-          type="button"
-          className="icon-btn"
-          aria-label="Back"
-          onClick={goBack}
-        >
-          <span className="text-[16px] leading-none">‹</span>
-        </button>
-        <h1 className="text-[17px] font-bold">Projects</h1>
+      <div className="flex items-center justify-between px-5 pt-5 pb-1">
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            type="button"
+            className="icon-btn shrink-0"
+            style={{ width: 36, height: 36 }}
+            aria-label="Back"
+            onClick={goBack}
+          >
+            <span className="text-[17px] leading-none">‹</span>
+          </button>
+          <h1 className="text-[17px] font-bold truncate">{project.name}</h1>
+        </div>
         <div className="relative">
           {isAdmin && (
             <button
@@ -203,127 +198,91 @@ export default function ProjectDetailView({
         </div>
       </div>
 
-      {/* ---------- Hero ---------- */}
-      <div className="card mx-5 mt-3 p-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="txn-icon">
-              <IconFolder size={18} />
+      {/* ---------- Summary ---------- */}
+      <div className="card mx-5 mt-4 p-5">
+        <div className="flex items-start justify-between mb-3.5">
+          <div>
+            <div className="text-[12px] font-semibold t-secondary uppercase" style={{ letterSpacing: "0.04em", marginBottom: 6 }}>
+              Spent so far
             </div>
-            <h2 className="text-[20px] font-bold tracking-tight truncate">{project.name}</h2>
+            <div>
+              <span className="text-[24px] font-bold num">{formatINRExact(spent)}</span>
+              {budget != null && budget > 0 && (
+                <span className="text-[13px] font-semibold t-tertiary ml-1">
+                  of {formatINRExact(budget)}
+                </span>
+              )}
+            </div>
           </div>
           <span
             className={`badge ${project.status === "active" ? "green" : "neutral"}`}
-            style={{ textTransform: "capitalize" }}
+            style={{ textTransform: "capitalize", padding: "5px 10px" }}
           >
             {project.status}
           </span>
         </div>
 
-        {project.target_date && (
-          <p className="text-[11.5px] font-semibold t-tertiary mt-2">
-            Target date · {dateLabel(project.target_date)}
-          </p>
+        {budget != null && budget > 0 ? (
+          <>
+            <div className="bar-track mb-2.5">
+              <div
+                className="bar-fill"
+                style={{ width: `${Math.min(100, pct ?? 0)}%` }}
+              />
+            </div>
+            <div className="flex justify-between items-center text-[12px] font-semibold t-tertiary">
+              <span className={over ? "t-red" : ""}>
+                {pct}% of budget used{over ? ` · ${formatINRExact(spent - budget)} over` : ""}
+              </span>
+              <span>Started {dateLabel(project.created_at)}</span>
+            </div>
+          </>
+        ) : (
+          <div className="flex justify-between items-center text-[12px] font-semibold t-tertiary">
+            <span>no overall budget set</span>
+            <span>Started {dateLabel(project.created_at)}</span>
+          </div>
         )}
-
-        <div className="mt-4">
-          <div className="text-[11.5px] font-bold uppercase tracking-wide t-secondary">
-            Budget used
-          </div>
-          {budget != null && budget > 0 ? (
-            <>
-              <div className="text-[30px] font-bold num mt-1">
-                {formatINRExact(spent)}
-              </div>
-              <div className="text-[12px] font-semibold t-tertiary mt-1">
-                of {formatINRExact(budget)} overall budget · {pct}% used
-              </div>
-              <div className="h-[7px] rounded-full overflow-hidden mt-3" style={{ background: "rgba(0,0,0,0.07)" }}>
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${Math.min(100, pct ?? 0)}%`,
-                    background: over
-                      ? "var(--red)"
-                      : "linear-gradient(90deg,var(--blue),#5a8be0)",
-                  }}
-                />
-              </div>
-              {over && (
-                <p className="text-[12px] font-bold t-red mt-2">
-                  {formatINRExact(spent - budget)} over budget
-                </p>
-              )}
-            </>
-          ) : (
-            <>
-              <div className="text-[30px] font-bold num mt-1">
-                {formatINRExact(spent)}
-              </div>
-              <div className="text-[12px] font-semibold t-tertiary mt-1">
-                spent · no overall budget set
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="flex items-stretch gap-4 mt-5 pt-4 border-t" style={{ borderColor: "var(--border)" }}>
-          <div className="flex-1">
-            <div className="text-[10.5px] font-bold uppercase tracking-wide t-tertiary mb-1">Spent</div>
-            <div className="text-[13.5px] font-bold num t-red">{formatINR(spent)}</div>
-          </div>
-          <div className="w-px bg-[var(--border)]" />
-          <div className="flex-1">
-            <div className="text-[10.5px] font-bold uppercase tracking-wide t-tertiary mb-1">Received</div>
-            <div className="text-[13.5px] font-bold num t-green">{formatINR(revenue)}</div>
-          </div>
-          <div className="w-px bg-[var(--border)]" />
-          <div className="flex-1">
-            <div className="text-[10.5px] font-bold uppercase tracking-wide t-tertiary mb-1">Net</div>
-            <div className="text-[13.5px] font-bold num">{formatINR(spent - revenue)}</div>
-          </div>
-        </div>
       </div>
 
       {/* ---------- People ---------- */}
-      <div className="section-label">People</div>
-      <div className="mx-5 rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-        <div className="flex items-center gap-3 px-4 py-3.5">
-          <div className="flex -space-x-1.5">
-            {people.map((p) => (
-              <div
+      <div className="card mx-5 mt-3.5 flex items-center justify-between px-4 py-3.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center">
+            {people.map((p, i) => (
+              <span
                 key={p.user_id}
                 className="avatar"
-                style={{ width: 36, height: 36, fontSize: 12, border: "2px solid var(--bg)" }}
+                style={{
+                  width: 26,
+                  height: 26,
+                  fontSize: 10,
+                  border: "2px solid var(--card)",
+                  marginLeft: i === 0 ? 0 : -8,
+                }}
               >
                 {initials(p.name)}
-              </div>
+              </span>
             ))}
             {people.length === 0 && (
-              <div className="avatar" style={{ width: 36, height: 36, fontSize: 12 }}>
+              <span className="avatar" style={{ width: 26, height: 26, fontSize: 10 }}>
                 ?
-              </div>
+              </span>
             )}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[12.5px] font-semibold t-secondary">
-              {people.map((p) => p.name).join(", ")}
-            </p>
-            <p className="text-[11px] font-semibold t-tertiary mt-0.5">
-              {people.map((p) => `${p.name} · ${ROLE_LABEL[p.role]}`).join(" · ")}
-            </p>
-          </div>
-          {canManageMembers && (
-            <button
-              type="button"
-              className="text-[12px] font-bold flex items-center gap-1 px-2.5 py-1.5 rounded-full"
-              style={{ background: "rgba(0,0,0,0.05)" }}
-              onClick={() => setManagingMembers(true)}
-            >
-              <IconUsers size={13} /> Manage
-            </button>
-          )}
+          <span className="text-[13px] font-semibold t-secondary truncate">
+            {people.map((p) => p.name).join(", ")}
+          </span>
         </div>
+        {canManageMembers && (
+          <button
+            type="button"
+            className="text-[12.5px] font-bold t-primary shrink-0"
+            onClick={() => setManagingMembers(true)}
+          >
+            + Add person
+          </button>
+        )}
       </div>
 
       {/* ---------- Category budgets ---------- */}
@@ -388,7 +347,7 @@ export default function ProjectDetailView({
       )}
 
       {/* ---------- Transactions ---------- */}
-      <div className="section-label">Transactions</div>
+      <div className="section-label">Transactions · {txnRows.length}</div>
 
       {txnRows.length === 0 ? (
         <div className="card mx-5 p-6 text-center">
@@ -398,28 +357,29 @@ export default function ProjectDetailView({
           </p>
         </div>
       ) : (
-        <div className="mx-5 rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-          {txnRows.map((r) => (
-            <div
-              key={r.key}
-              className="flex items-center gap-3 px-4 py-3.5"
-              style={{ borderBottom: "1px solid var(--border)" }}
-            >
-              <span className="dot" style={{ background: r.categoryColor ?? "var(--border)" }} />
-              <div className="flex-1 min-w-0">
-                <div className="txn-title truncate">
-                  {r.note ?? r.categoryName}
+        <div className="px-5 flex flex-col gap-2">
+          {txnRows.map((r) => {
+            const Icon = categoryIcon(r.categoryName, !r.isExpense ? "revenue" : undefined);
+            return (
+              <div key={r.key} className="txn-row">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="txn-icon">
+                    <Icon size={17} stroke={1.8} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="txn-title truncate">{r.note ?? r.categoryName}</div>
+                    <div className="txn-sub">
+                      {r.via} · {r.categoryName} · {dateLabel(r.date)}
+                    </div>
+                  </div>
                 </div>
-                <div className="txn-sub">
-                  {r.via} · {r.categoryName} · {dateLabel(r.date)}
-                </div>
+                <span className="txn-amt flex-shrink-0" style={!r.isExpense ? { color: "var(--green)" } : undefined}>
+                  {r.isExpense ? "−" : "+"}
+                  {formatINRExact(r.amount)}
+                </span>
               </div>
-              <span className={`text-[13.5px] font-bold num ${r.isExpense ? "t-red" : "t-green"}`}>
-                {r.isExpense ? "−" : "+"}
-                {formatINRExact(r.amount)}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

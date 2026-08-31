@@ -1,21 +1,47 @@
 #!/usr/bin/env tsx
 /**
- * Creates Supabase Auth users for the seeded demo profiles so you can sign in
- * with a known password. The public.users rows already exist (from the seed
- * migration) and use deterministic ids; the trigger keeps them in sync.
+ * Seeds the canonical demo on a REAL Supabase project (also works against a
+ * local `supabase start`).
+ *
+ * WHY THIS SCRIPT EXISTS:
+ * public.users.id has FK -> auth.users(id), so the canonical demo rows can
+ * never be inserted by a `supabase db push` migration — auth.users is managed
+ * by GoTrue and holds no rows for those ids on a fresh project (SQLSTATE 23503).
+ * The seed migration 0002_seed.sql therefore self-guards: it only runs its
+ * dataset when the three canonical auth ids already exist.
+ *
+ * This script performs both steps in the only order the FK allows:
+ *  1. Creates the three demo Auth users via the Admin API (deterministic ids).
+ *     The on_auth_user_created trigger then auto-creates the public.users
+ *     profiles (role member, family null, name from metadata).
+ *  2. Applies supabase/migrations/0002_seed.sql over a direct database
+ *     connection (DATABASE_URL). With the auth ids now present the guard
+ *     passes, the canonical dataset lands, and the role/name patch settles
+ *     the trigger-created profiles (Aravind → admin).
  *
  * Usage:
  *   cp .env.example .env.local  # fill in a REAL project (hosted or `supabase start`)
- *   npm run db:migrate          # apply 0001_init.sql + 0002_seed.sql
+ *   supabase db push            # apply schema 0001–0009
  *   npm run db:seed-demo        # this script
  *
- * Demo sign-in (password set below):
+ * Demo sign-in (shared password below):
  *   aravind@example.com / revathi@example.com / karthik@example.com
  */
+import * as dotenv from "dotenv";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { Client } from "pg";
+
+// Load .env.local before any process.env reads (a standalone tsx script gets
+// none of Next.js's env handling). dotenv loads `.env` by default, so we point
+// it at `.env.local` explicitly. Real env vars already exported in the shell
+// take precedence over the file.
+dotenv.config({ path: join(process.cwd(), ".env.local") });
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const databaseUrl = process.env.DATABASE_URL;
 
 if (!url || !serviceRole) {
   console.error(
@@ -23,8 +49,15 @@ if (!url || !serviceRole) {
   );
   process.exit(1);
 }
+if (!databaseUrl) {
+  console.warn(
+    "DATABASE_URL is not set — auth users will be created, but the canonical demo data will NOT be applied. Add the project's connection string to .env.local and re-run.",
+  );
+}
 
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD ?? "FamilyPurse#2026";
+
+const SEED_FILE = join(process.cwd(), "supabase", "migrations", "0002_seed.sql");
 
 const DEMO_USERS = [
   {
@@ -78,10 +111,30 @@ async function upsertUser(supabase: SupabaseClient, u: (typeof DEMO_USERS)[numbe
   void data;
 }
 
+async function applyCanonicalSeed() {
+  try {
+    const sql = await readFile(SEED_FILE, "utf8");
+    const client = new Client({ connectionString: databaseUrl });
+    await client.connect();
+    try {
+      await client.query(sql);
+      console.log("Canonical demo dataset applied (0002_seed.sql) ✓");
+    } finally {
+      await client.end();
+    }
+  } catch (e) {
+    console.error("Could not apply the canonical demo dataset:", e instanceof Error ? e.message : e);
+    process.exit(1);
+  }
+}
+
 async function main() {
-  console.log("Seeding demo auth users…");
+  console.log("Creating demo auth users…");
   for (const u of DEMO_USERS) {
     await upsertUser(admin, u);
+  }
+  if (databaseUrl) {
+    await applyCanonicalSeed();
   }
   console.log("Done. Sign in with any demo email and the shared demo password.");
 }

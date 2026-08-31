@@ -1,5 +1,7 @@
+import { createElement } from "react";
 import Link from "next/link";
 import { formatINR, formatDayMonth } from "@/lib/format";
+import { categoryIcon } from "@/lib/category-icons";
 
 export type TxnRowDatum = {
   id: string;
@@ -33,7 +35,7 @@ export default function TransactionRow({
   return (
     <Link href={href} className="txn-row">
       <div className="txn-icon">
-        <span className="dot" style={{ background: t.categoryColor ?? "#8A867C" }} />
+        {createElement(categoryIcon(t.categoryName, t.type), { size: 17, stroke: 1.8 })}
       </div>
       <div className="flex-1 min-w-0">
         <div className="txn-title truncate">

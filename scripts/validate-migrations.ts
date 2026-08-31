@@ -62,6 +62,34 @@ create role service_role nologin;
 create role supabase_auth_admin nologin;
 `;
 
+// A REAL Supabase deployment starts with an EMPTY auth.users (GoTrue-managed;
+// a migration can never insert the demo ids), but the auth schema itself —
+// including auth.uid() — always exists. This stub mirrors that state so we can
+// prove migrations 0001–0009 apply cleanly before seed-demo runs.
+const FRESH_STUB = `
+create schema auth;
+create table auth.users (
+  id uuid primary key,
+  email text not null default '',
+  raw_user_meta_data jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create or replace function auth.uid()
+returns uuid
+language sql
+stable
+set search_path = public, pg_catalog
+as $$
+  select nullif(current_setting('app.uid', true), '')::uuid
+$$;
+
+create role authenticated nologin;
+create role anon nologin;
+create role service_role nologin;
+create role supabase_auth_admin nologin;
+`;
+
 let passed = 0;
 let failed = 0;
 const failures: string[] = [];
@@ -1881,6 +1909,87 @@ async function main() {
     [CARD_HDFC],
   );
   check("HDFC outstanding restored to ₹38,480", num(finalHdfc.rows[0].num) === 38480, String(finalHdfc.rows[0].num));
+
+  // ---- R. Fresh real-project path (empty auth.users) ---------------------
+  console.log("\nR. Fresh real-project migration path (empty auth.users)");
+  const fresh = new PGlite({ extensions: { btree_gist, pgcrypto } });
+  await fresh.exec(FRESH_STUB);
+  let freshOk = true;
+  for (const f of [
+    "0001_init.sql",
+    "0002_seed.sql",
+    "0003_transaction_engine.sql",
+    "0004_write_offs.sql",
+    "0005_loan_engine.sql",
+    "0006_projects.sql",
+    "0007_members_admin.sql",
+    "0008_report_select_scope.sql",
+    "0009_admin_family_scope.sql",
+  ]) {
+    try {
+      await fresh.exec(await readFile(join(MIG_DIR, f), "utf8"));
+    } catch (e) {
+      freshOk = false;
+      check(`Fresh project: applied ${f}`, false, e instanceof Error ? e.message : String(e));
+      break;
+    }
+  }
+  check("0001–0009 apply cleanly on a fresh real Supabase project (no auth users yet)", freshOk);
+  if (freshOk) {
+    const freshUsers = await fresh.query<{ n: number }>("select count(*)::int as n from public.users");
+    const freshFamilies = await fresh.query<{ n: number }>("select count(*)::int as n from public.families");
+    const freshTxns = await fresh.query<{ n: number }>("select count(*)::int as n from public.transactions");
+    check("Seed migration no-ops until the demo auth users exist", freshUsers.rows[0].n === 0);
+    check("No demo rows leak into a fresh deployment pre-seed", freshFamilies.rows[0].n === 0);
+    check("Report/txn schema present but empty on a fresh deployment", freshTxns.rows[0].n === 0);
+  }
+  await fresh.close();
+
+  // ---- S. Canonical demo identities + single seed source ------------------
+  console.log("\nS. Canonical demo identities + single seed source");
+  const canonical = [
+    { id: U.aravind, email: "aravind@example.com", name: "Aravind", role: "admin" },
+    { id: U.revathi, email: "revathi@example.com", name: "Revathi", role: "member" },
+    { id: U.karthik, email: "karthik@example.com", name: "Karthik", role: "member" },
+  ];
+  for (const c of canonical) {
+    const row = await db.query<{ email: string; name: string; role: string }>(
+      "select email, name, role::text as role from public.users where id = $1",
+      [c.id],
+    );
+    check(
+      `Canonical seed: ${c.email} (${c.role})`,
+      row.rows.length === 1 &&
+        row.rows[0].email === c.email &&
+        row.rows[0].name === c.name &&
+        row.rows[0].role === c.role,
+      row.rows.length ? JSON.stringify(row.rows[0]) : "missing profile",
+    );
+  }
+  const famRow = await db.query<{ name: string; owner: string }>(
+    "select name, owner_id::text as owner from public.families where id = '11111111-1111-4111-8111-111111111111'",
+  );
+  check(
+    "Canonical seed: 'The Ramans' family owned by Aravind",
+    famRow.rows.length === 1 && famRow.rows[0].name === "The Ramans" && famRow.rows[0].owner === U.aravind,
+    famRow.rows.length ? JSON.stringify(famRow.rows[0]) : "missing family",
+  );
+  const seedDemo = await readFile(join(process.cwd(), "scripts", "seed-demo.ts"), "utf8");
+  for (const c of canonical) {
+    check(
+      `seed-demo.ts maps ${c.email} to its canonical id`,
+      seedDemo.includes(c.email) && seedDemo.includes(c.id),
+    );
+  }
+  check(
+    "seed-demo.ts applies the canonical 0002_seed.sql over DATABASE_URL",
+    seedDemo.includes("0002_seed.sql") && seedDemo.includes("DATABASE_URL"),
+  );
+  const seedFile = await readFile(join(MIG_DIR, "0002_seed.sql"), "utf8");
+  check(
+    "0002_seed.sql guards on canonical auth ids (clean no-op on a fresh real project)",
+    seedFile.includes("auth.users") && seedFile.includes("on conflict (id) do nothing"),
+  );
 
   console.log(`\n\n${passed} passed, ${failed} failed`);
   if (failed > 0) {
