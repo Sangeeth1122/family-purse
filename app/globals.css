@@ -1,26 +1,290 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f7f4ee;
+  --card: #fdfcfa;
+  --border: rgba(0, 0, 0, 0.07);
+  --shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --text: #1a1a18;
+  --text-secondary: #8a867c;
+  --text-tertiary: #8f8b81;
+  --red: #b0562f;
+  --green: #4a7a5e;
+  --blue: #3e7ca6;
+  --radius-card: 12px;
+  --radius-btn: 8px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: var(--radius-btn);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- App frame ---- */
+.app-frame {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+/* ---- Cards ---- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+}
+
+/* ---- Text helpers ---- */
+.t-primary { color: var(--text); }
+.t-secondary { color: var(--text-secondary); }
+.t-tertiary { color: var(--text-tertiary); }
+.t-red { color: var(--red); }
+.t-green { color: var(--green); }
+
+/* ---- Icon button ---- */
+.icon-btn {
+  width: 40px; height: 40px;
+  border-radius: var(--radius-btn);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--card); border: 1px solid var(--border);
+  color: var(--text); flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* ---- Buttons ---- */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 14px; border-radius: var(--radius-btn);
+  font-weight: 700; font-size: 14px; cursor: pointer;
+  border: 1px solid transparent; text-align: center;
+}
+.btn-primary { background: var(--text); color: var(--bg); }
+.btn-secondary { background: var(--card); border-color: var(--border); color: var(--text); }
+.btn-ghost { background: transparent; color: var(--text-secondary); font-weight: 600; border: 1px dashed rgba(0, 0, 0, 0.15); }
+.btn-danger { background: transparent; color: var(--red); border: 1px solid var(--border); }
+.btn-red { background: var(--red); color: #fff; }
+
+/* ---- Inputs ---- */
+.field { margin-bottom: 18px; }
+.field-label {
+  display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;
+}
+.input {
+  width: 100%; padding: 13px 14px; border-radius: var(--radius-btn);
+  border: 1px solid var(--border); background: var(--card);
+  font-family: inherit; font-size: 16px; font-weight: 600; color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.input::placeholder { color: var(--text-tertiary); font-weight: 500; }
+.field-hint { font-size: 11.5px; color: var(--text-tertiary); font-weight: 500; margin-top: 7px; line-height: 1.4; }
+
+/* ---- Select box (looks like a field but is a picker) ---- */
+.select-box {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 14px; border-radius: var(--radius-btn); border: 1px solid var(--border);
+  background: var(--card); font-size: 14.5px; font-weight: 600; color: var(--text);
+  cursor: pointer;
+}
+.select-box .placeholder { color: var(--text-tertiary); font-weight: 600; }
+
+/* ---- Segmented control ---- */
+.segmented {
+  display: flex; background: rgba(0, 0, 0, 0.05); border-radius: 10px; padding: 3px;
+}
+.seg {
+  flex: 1; text-align: center; padding: 9px; border-radius: 8px;
+  font-size: 13px; font-weight: 700; color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  cursor: pointer;
+}
+.seg.active { background: var(--card); color: var(--text); box-shadow: var(--shadow); }
+.seg.active.expense { color: var(--red); }
+.seg.active.revenue { color: var(--green); }
+
+/* ---- Big amount field ---- */
+.amt-field { display: flex; align-items: baseline; justify-content: center; gap: 1px; padding: 6px 0 16px; }
+.amt-field .curr { font-size: 20px; font-weight: 600; color: var(--text-tertiary); }
+.amt-input {
+  width: 100%; border: none; background: none; font-family: inherit;
+  font-size: 38px; font-weight: 700; text-align: center;
+  font-variant-numeric: tabular-nums; color: var(--text); caret-color: var(--text);
+}
+.amt-input:focus { outline: none; }
+.amt-input:focus-visible { outline: 2px solid var(--blue); outline-offset: 0; border-radius: 8px; }
+.amt-input.expense { color: var(--red); }
+.amt-input.revenue { color: var(--green); }
+.amt-input::placeholder { color: var(--text-tertiary); font-size: 26px; }
+
+/* ---- Sub-chips (Transfer: To Person / To Card / To Loan) ---- */
+.sub-chips { display: flex; gap: 8px; margin-bottom: 18px; }
+.sub-chip {
+  flex: 1; text-align: center; padding: 9px; border-radius: 20px;
+  border: 1px solid var(--border); background: var(--card);
+  font-size: 12.5px; font-weight: 700; color: var(--text-secondary);
+  white-space: nowrap; cursor: pointer;
+}
+.sub-chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+/* ---- Overpay / balance nudge (guard rails) ---- */
+.nudge {
+  background: #FBF1E8; border: 1px solid rgba(176, 86, 47, 0.25);
+  border-radius: var(--radius-btn); padding: 14px; margin-bottom: 16px;
+}
+.nudge-head { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 12px; }
+.nudge-head i { font-size: 16px; color: var(--red); margin-top: 1px; }
+.nudge-head p { font-size: 12.5px; font-weight: 600; color: var(--text); line-height: 1.45; }
+.nudge-head p b { font-variant-numeric: tabular-nums; }
+.nudge-options { display: flex; flex-direction: column; gap: 7px; }
+.nudge-btn {
+  width: 100%; padding: 10px 12px; border-radius: 7px;
+  font-size: 12.5px; font-weight: 700; text-align: left;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer;
+}
+.nudge-btn.primary { background: var(--text); color: var(--bg); }
+.nudge-btn.secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+.nudge-btn.tertiary { background: transparent; color: var(--text-secondary); border: 1px dashed rgba(0, 0, 0, 0.15); }
+.nudge-btn i { font-size: 13px; display: inline-flex; }
+
+/* ---- Locked entity chip (settlement edit mode) ---- */
+.locked-chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 11px 14px; border-radius: var(--radius-btn);
+  border: 1px solid rgba(0, 0, 0, 0.08); background: var(--card);
+  font-size: 13.5px; font-weight: 700; color: var(--text);
+}
+
+/* ---- Chips ---- */
+.chip {
+  padding: 8px 14px; border-radius: 20px; border: 1px solid var(--border);
+  background: var(--card); font-size: 12.5px; font-weight: 600; color: var(--text-secondary);
+  white-space: nowrap; cursor: pointer; min-height: 34px; display: inline-flex;
+  align-items: center;
+}
+.chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+/* ---- Category dot ---- */
+.dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+
+/* ---- Avatar ---- */
+.avatar {
+  border-radius: 50%; background: rgba(0, 0, 0, 0.08);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: var(--text-secondary); flex-shrink: 0;
+}
+.avatar.external { border: 1px dashed var(--border); background: var(--card); }
+
+/* ---- Progress bar ---- */
+.bar-track { height: 6px; border-radius: 4px; background: rgba(0, 0, 0, 0.06); overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; background: var(--text); }
+
+/* ---- Section label ---- */
+.section-label {
+  padding: 22px 20px 8px;
+  font-size: 12px; font-weight: 700; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.section-label .action { font-size: 12px; font-weight: 700; color: var(--text); text-transform: none; letter-spacing: 0; }
+
+/* ---- Status badge / role tag ---- */
+.badge {
+  font-size: 10.5px; font-weight: 700; padding: 4px 9px; border-radius: 20px; white-space: nowrap;
+}
+.badge.green { background: rgba(74, 122, 94, 0.12); color: var(--green); }
+.badge.neutral { background: rgba(0, 0, 0, 0.06); color: var(--text-secondary); }
+
+/* ---- Bottom nav ---- */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px;
+  background: var(--card); border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  z-index: 30;
+}
+.nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  color: var(--text-tertiary); font-size: 10px; font-weight: 600; cursor: pointer;
+  background: none; border: none; font-family: inherit;
+}
+.nav-item.active { color: var(--text); }
+.nav-add {
+  width: 46px; height: 46px; border-radius: 50%;
+  background: var(--text); color: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  margin-top: -26px; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+  font-size: 22px; cursor: pointer; border: none;
+}
+
+/* ---- Bottom sheet modal ---- */
+.sheet-overlay {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35);
+  display: flex; align-items: flex-end; justify-content: center; z-index: 50;
+}
+.sheet {
+  width: 100%; max-width: 430px; background: var(--bg);
+  border-radius: 20px 20px 0 0; padding: 10px 20px calc(24px + env(safe-area-inset-bottom));
+  max-height: 92vh; overflow-y: auto;
+}
+.handle { width: 36px; height: 4px; border-radius: 3px; background: rgba(0, 0, 0, 0.15); margin: 6px auto 14px; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.sheet-head h2 { font-size: 17px; font-weight: 700; }
+.close-btn {
+  width: 36px; height: 36px; border-radius: 50%; background: rgba(0, 0, 0, 0.06);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); cursor: pointer;
+}
+
+/* ---- Centered dialog ---- */
+.dialog-overlay {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35);
+  display: flex; align-items: center; justify-content: center; z-index: 60; padding: 0 24px;
+}
+.dialog {
+  width: 100%; max-width: 330px; background: var(--bg);
+  border-radius: 14px; padding: 24px 22px 20px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); text-align: center;
+}
+
+/* ---- Transaction row ---- */
+.txn-row {
+  background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow);
+  border-radius: var(--radius-card); padding: 13px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  cursor: pointer;
+}
+.txn-icon {
+  width: 36px; height: 36px; border-radius: 9px; background: rgba(0, 0, 0, 0.04);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); flex-shrink: 0;
+}
+.txn-title { font-size: 14.5px; font-weight: 600; }
+.txn-sub { font-size: 12px; color: var(--text-tertiary); font-weight: 600; margin-top: 2px; }
+.txn-amt { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--red); }
+.txn-amt.pos { color: var(--green); }

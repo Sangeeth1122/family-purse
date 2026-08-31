@@ -1,0 +1,122 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  IconLogout,
+  IconMail,
+  IconPencil,
+  IconUserPlus,
+  IconUsers,
+} from "@tabler/icons-react";
+import { initials } from "@/lib/format";
+import type { Family, UserRow } from "@/lib/types";
+import EditNameSheet from "@/components/edit-name-sheet";
+
+export default function ProfileView({
+  me,
+  family,
+  defaultEmail,
+}: {
+  me: UserRow;
+  family: Family | null;
+  defaultEmail: string;
+}) {
+  const router = useRouter();
+  const [editingName, setEditingName] = useState(false);
+
+  async function onLogout() {
+    const { createClient } = await import("@/lib/supabase/client");
+    await createClient().auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
+  return (
+    <div className="min-h-screen pb-24">
+      <div className="flex flex-col items-center pt-10 pb-6">
+        <div className="relative">
+          <div className="avatar" style={{ width: 76, height: 76, fontSize: 26 }}>
+            {initials(me.name)}
+          </div>
+          <button
+            type="button"
+            aria-label="Edit name"
+            className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-[var(--card)] border flex items-center justify-center t-secondary"
+            style={{ borderColor: "var(--border)" }}
+            onClick={() => setEditingName(true)}
+          >
+            <IconPencil size={12} />
+          </button>
+        </div>
+        <h1 className="text-[19px] font-bold mt-3">{me.name}</h1>
+        <p className="text-[12.5px] font-semibold t-secondary mt-0.5">
+          {me.role === "admin" ? "Admin" : "Member"}
+          {family ? ` · ${family.name}` : ""}
+        </p>
+      </div>
+
+      <div className="card mx-5 overflow-hidden">
+        <Row k="Name" v={me.name} onTap={() => setEditingName(true)} icon={<IconPencil size={14} />} />
+        <Row k="Email" v={defaultEmail} icon={<IconMail size={15} />} />
+      </div>
+
+      {family && (
+        <>
+          <div className="section-label">Family</div>
+          <div className="card mx-5 overflow-hidden">
+            <Row k="Family" v={family.name} icon={<IconUsers size={15} />} />
+            <Row
+              k="Member since"
+              v={new Date(me.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+            />
+            <Row
+              k="Invite members"
+              v=""
+              icon={<IconUserPlus size={15} />}
+              onTap={() => router.push("/app/family/members")}
+            />
+          </div>
+        </>
+      )}
+
+      <div className="mx-5 mt-6">
+        <button type="button" className="btn btn-danger w-full" onClick={onLogout}>
+          <IconLogout size={16} /> Log out
+        </button>
+        <p className="text-center text-[11px] font-semibold t-tertiary mt-5">
+          Family Purse — self-hosted, no ads, no third parties.
+        </p>
+      </div>
+
+      {editingName && (
+        <EditNameSheet current={me.name} onClose={() => setEditingName(false)} />
+      )}
+    </div>
+  );
+}
+
+function Row({
+  k,
+  v,
+  icon,
+  onTap,
+}: {
+  k: string;
+  v: string;
+  icon?: React.ReactNode;
+  onTap?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onTap}
+      className="w-full flex items-center justify-between px-4 py-3.5 border-t first:border-t-0 text-left disabled:opacity-100"
+      style={{ borderColor: "var(--border)", cursor: onTap ? "pointer" : "default" }}
+      disabled={!onTap}
+    >
+      <span className="text-[12.5px] font-bold t-secondary">{k}</span>
+      <span className="flex items-center gap-1.5 text-[13.5px] font-bold">{icon}{v}</span>
+    </button>
+  );
+}

@@ -6,14 +6,30 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "db:seed-demo": "tsx scripts/seed-demo.ts",
+    "db:smoke-phase2": "tsx scripts/smoke-test-phase2.ts",
+    "db:test-cards": "tsx scripts/test-cards.ts",
+    "db:test-loans": "tsx scripts/test-loans.ts",
+    "db:test-projects": "tsx scripts/test-projects.ts",
+    "db:test-reports": "tsx scripts/test-reports.ts",
+    "db:test-pwa": "tsx scripts/test-pwa.ts",
+    "build:icons": "tsx scripts/build-icons.ts",
+    "db:validate": "tsx scripts/validate-migrations.ts",
+    "db:dev": "supabase db reset"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.5",
+    "@supabase/supabase-js": "^2.112.4",
+    "@tabler/icons-react": "^3.46.0",
     "next": "16.3.3",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "recharts": "^3.10.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -21,6 +37,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5"
   }
 }
