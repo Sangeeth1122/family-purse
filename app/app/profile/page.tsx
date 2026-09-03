@@ -10,15 +10,19 @@ export default async function ProfilePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [meRes, familyRes, membersRes] = await Promise.all([
-    supabase.from("users").select("*").eq("id", user.id).maybeSingle(),
-    supabase.from("families").select("*").maybeSingle(),
+  const { data: me } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!me) redirect("/setup");
+
+  const [familyRes, membersRes] = await Promise.all([
+    supabase.from("families").select("*").eq("id", me.family_id).maybeSingle(),
     supabase.from("users").select("*").order("created_at"),
   ]);
 
-  const me = meRes.data as UserRow | null;
-  if (meRes.error) throw new Error("Could not load your profile.");
-  if (!me) redirect("/setup");
   const family = me.family_id ? (familyRes.data as Family | null) : null;
   const members = (((membersRes.data ?? []) as UserRow[]) || []).filter(
     (m) => !family || m.family_id === family.id,
@@ -26,7 +30,7 @@ export default async function ProfilePage() {
 
   return (
     <ProfileView
-      me={me}
+      me={me as UserRow}
       family={family}
       members={members}
       defaultEmail={user.email ?? ""}
