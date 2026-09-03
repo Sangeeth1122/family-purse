@@ -14,13 +14,6 @@ function monthBounds(d = new Date()) {
   return { from, to, label: d.toLocaleDateString("en-IN", { month: "long", year: "numeric" }) };
 }
 
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
-}
-
 /** Convert a YYYY-MM key to a Date at the first day of that month. */
 function dateFromKey(key: string): Date {
   const [y, m] = key.split("-").map(Number);
@@ -134,18 +127,9 @@ export default async function DashboardPage() {
     <div className="min-h-screen leading-[1.2]">
       {/* Header (mockup: frame provides 20px top padding; greeting 13px muted / brand 17px / bell 34x34) */}
       <div className="flex items-center justify-between pb-[18px]">
-        <div className="flex items-center gap-2.5">
-          <img
-            src="/logo-horizontal.png"
-            alt=""
-            aria-hidden="true"
-            className="h-7 w-auto"
-            style={{ height: "28px" }}
-          />
-          <div>
-            <div className="text-[13px] font-semibold t-secondary">{greeting()}</div>
-            <h1 className="text-[17px] font-bold">Family Purse</h1>
-          </div>
+        <div>
+          <div className="text-[13px] font-semibold t-secondary">Welcome!</div>
+          <h1 className="text-[17px] font-bold">{me?.name}</h1>
         </div>
         <RemindersBell reminders={reminders} isAdmin={me?.role === "admin"} />
       </div>

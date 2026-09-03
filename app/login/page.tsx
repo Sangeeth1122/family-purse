@@ -78,11 +78,11 @@ export default function LoginPage() {
     <div className="min-h-[520px] flex flex-col px-1 pt-0 pb-8">
       <div className="flex justify-center mb-5">
         <img
-          src="/logo-horizontal.png"
+          src="/logo-mark.png"
           alt=""
           aria-hidden="true"
           className="h-8 w-auto"
-          style={{ height: "32px" }}
+          style={{ height: "40px" }}
         />
       </div>
       <h1 className="text-center text-[20px] font-bold mb-1.5">Family Purse</h1>

@@ -89,11 +89,11 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex flex-col px-6 pt-10 pb-8">
       <div className="flex justify-center mb-5">
         <img
-          src="/logo-horizontal.png"
+          src="/logo-mark.png"
           alt=""
           aria-hidden="true"
           className="h-8 w-auto"
-          style={{ height: "32px" }}
+          style={{ height: "40px" }}
         />
       </div>
       <div className="flex items-center gap-3 mb-10">
