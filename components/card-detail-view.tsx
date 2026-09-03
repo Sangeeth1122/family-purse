@@ -91,9 +91,9 @@ export default function CardDetailView({
   }
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-24 -mx-10 -mt-4">
       {/* ---------- Top bar ---------- */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-2">
+      <div className="flex items-center justify-between px-5 pt-5 pb-1">
         <button
           type="button"
           className="icon-btn"
@@ -174,18 +174,18 @@ export default function CardDetailView({
       </div>
 
       {/* ---------- Balance summary ---------- */}
-      <div className="card mx-5 mt-3 p-5 flex items-center justify-between">
+      <div className="card mx-5 mt-3 p-[18px_20px] flex items-center justify-between">
         <div>
           <div className="text-[11.5px] font-bold uppercase tracking-wide t-secondary">
             {credit ? "Credit balance" : "Outstanding"}
           </div>
           <div
-            className="text-[26px] font-bold num mt-1"
+            className="text-[24px] font-bold num mt-1"
             style={{ color: credit ? "var(--green)" : balance > 0 ? "var(--red)" : "var(--text)" }}
           >
             {formatINRExact(Math.abs(balance))}
           </div>
-          <div className="text-[12px] font-semibold t-tertiary mt-1">
+          <div className="text-[12.5px] font-semibold t-tertiary mt-1">
             {credit
               ? "You've paid more than you owe"
               : balance > 0
@@ -225,7 +225,7 @@ export default function CardDetailView({
           </p>
         </div>
       ) : (
-        <div className="px-5 flex flex-col gap-2.5">
+        <div className="mx-5 flex flex-col gap-3">
           {rows.map((r) => (
             <TransactionRow
               key={r.id}

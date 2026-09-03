@@ -1,16 +1,11 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createElement } from "react";
-import {
-  IconBell,
-  IconTrendingUp,
-} from "@tabler/icons-react";
+import { IconTrendingUp } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/server";
-import { formatINR, formatFullDate, initials } from "@/lib/format";
-import { categoryIcon } from "@/lib/category-icons";
-import { summarizeMonth, memberSpend, reportTransactions } from "@/lib/report";
+import { formatINR } from "@/lib/format";
+import { summarizeMonth, reportTransactions } from "@/lib/report";
 import RemindersBell from "@/components/reminders/reminders-panel";
-import type { Budget, Category, Reminder, Transaction, UserRow } from "@/lib/types";
+import type { Category, Reminder, Transaction, UserRow, LegacyBudget } from "@/lib/types";
 
 function monthBounds(d = new Date()) {
   const from = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
@@ -26,14 +21,38 @@ function greeting() {
   return "Good evening";
 }
 
+/** Convert a YYYY-MM key to a Date at the first day of that month. */
+function dateFromKey(key: string): Date {
+  const [y, m] = key.split("-").map(Number);
+  return new Date(y, m - 1, 1);
+}
+
+/** 1 → "1st", 2 → "2nd", 11 → "11th", 22 → "22nd". */
+function ordinal(n: number): string {
+  const rem100 = n % 100;
+  if (rem100 >= 11 && rem100 <= 13) return `${n}th`;
+  const rem10 = n % 10;
+  const suffix = rem10 === 1 ? "st" : rem10 === 2 ? "nd" : rem10 === 3 ? "rd" : "th";
+  return `${n}${suffix}`;
+}
+
+/** Projected day-of-month the total budget would be exhausted at the current
+ * spend pace (mockup note "…hit budget by 22nd · 8 days early"), or null when
+ * there is no meaningful projection (nothing spent / already over / month
+ * complete). */
+function budgetHitDay(spent: number, budget: number, elapsedDay: number, daysInMonth: number): number | null {
+  if (budget <= 0 || spent <= 0 || spent >= budget) return null;
+  const projected = Math.ceil((elapsedDay * budget) / spent);
+  if (elapsedDay >= daysInMonth || projected > daysInMonth) return null;
+  return projected;
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-
-  const { from, to, label } = monthBounds();
 
   const [membersRes, catsRes, txnsRes, budgetsRes, remindersRes] = await Promise.all([
     supabase.from("users").select("*").order("created_at"),
@@ -49,8 +68,22 @@ export default async function DashboardPage() {
   const members = (membersRes.data ?? []) as UserRow[];
   const categories = (catsRes.data ?? []) as Category[];
   const allTxns = (txnsRes.data ?? []) as Transaction[];
-  const budgets = (budgetsRes.data ?? []) as Budget[];
+  const budgets = (budgetsRes.data ?? []) as LegacyBudget[];
   const reminders = (remindersRes.data ?? []) as Reminder[];
+
+  // Dashboard month. Normally the current calendar month; when it has no
+  // transactions (e.g. the month just rolled over and the family's canonical
+  // data lives in a previous month), fall back to the most recent month that
+  // has P&L transactions so the dashboard renders real data.
+  const reportable = reportTransactions(allTxns, "0000-01-01", "9999-12-31");
+  const dataMonths = [...new Set(reportable.map((t) => t.date.slice(0, 7)))].sort();
+  const currentBounds = monthBounds();
+  const currentKey = currentBounds.from.slice(0, 7);
+  const bounds =
+    !dataMonths.includes(currentKey) && dataMonths.length > 0
+      ? monthBounds(dateFromKey(dataMonths[dataMonths.length - 1]))
+      : currentBounds;
+  const { from, to } = bounds;
 
   const me = members.find((m) => m.id === user.id);
 
@@ -60,7 +93,21 @@ export default async function DashboardPage() {
   };
 
   const report = summarizeMonth(reportTransactions(allTxns, from, to), catName);
-  const spendByMember = memberSpend(reportTransactions(allTxns, from, to));
+
+  // Previous-month summary, used by the balance trend and the top-mover delta.
+  const [fromY, fromM] = from.split("-").map(Number);
+  const prevBounds = monthBounds(new Date(fromY, fromM - 2, 1));
+  const prevReport = summarizeMonth(reportTransactions(allTxns, prevBounds.from, prevBounds.to), catName);
+  const trendPct =
+    prevReport.net !== 0
+      ? Math.abs(Math.round(((report.net - prevReport.net) / Math.abs(prevReport.net)) * 100))
+      : null;
+  const trendUp = report.net >= prevReport.net;
+  const elapsedDay =
+    bounds.from.slice(0, 7) === currentKey
+      ? new Date().getDate()
+      : Number(to.slice(-2));
+  const daysInMonth = Number(to.slice(-2));
 
   // Personal budget pace for the signed-in user.
   const myBudgets = budgets.filter((b) => b.scope_type === "personal" && b.scope_id === user.id);
@@ -78,56 +125,72 @@ export default async function DashboardPage() {
   const budgetTotal = pace.reduce((s, p) => s + (p.budget ?? 0), 0);
 
   const topMover = pace.find((p) => p.spent > 0);
+  const moverDelta =
+    topMover != null
+      ? topMover.spent - (prevReport.byCategory.find((c) => c.categoryId === topMover.category.id)?.amount ?? 0)
+      : 0;
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-1">
+    <div className="min-h-screen leading-[1.2]">
+      {/* Header (mockup: frame provides 20px top padding; greeting 13px muted / brand 17px / bell 34x34) */}
+      <div className="flex items-center justify-between pb-[18px]">
         <div>
           <div className="text-[13px] font-semibold t-secondary">{greeting()}</div>
           <h1 className="text-[17px] font-bold">Family Purse</h1>
         </div>
-        <RemindersBell
-          reminders={reminders}
-          isAdmin={me?.role === "admin"}
-        />
+        <RemindersBell reminders={reminders} isAdmin={me?.role === "admin"} />
       </div>
 
-      {/* Balance card */}
-      <div className="card mx-5 mt-3 p-4">
-        <div className="flex items-center justify-between">
-          <span className="text-[13px] font-semibold t-secondary">Family balance</span>
+      {/* Balance card (mockup: padding 16px, label left + balance + sparkline, delta row 12px/600) */}
+      <div className="card p-4 mb-2.5">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="text-[13px] font-semibold t-secondary">Family balance</div>
+            <div
+              className="text-[29px] font-semibold num mt-1.5"
+              style={{ letterSpacing: "-0.3px" }}
+            >
+              {formatINR(report.net)}
+            </div>
+          </div>
+          <svg width="70" height="32" viewBox="0 0 70 32" className="shrink-0" aria-hidden="true">
+            <polyline
+              points="0,26 12,22 24,24 36,14 48,16 60,6 70,9"
+              fill="none"
+              stroke="#4A7A5E"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </div>
-        <div className="text-[29px] font-semibold num mt-1.5" style={{ letterSpacing: "-0.3px" }}>
-          {report.net >= 0 ? "+" : "−"}
-          {formatINR(Math.abs(report.net))}
-        </div>
-
-        <div className="flex items-center gap-4 mt-2">
-          <span className="text-[12px] font-semibold t-green">
-            {formatINR(report.income)} in
-          </span>
-          <span className="text-[12px] font-semibold t-red">
-            {formatINR(report.expense)} out
-          </span>
+        <div className="flex gap-4 mt-2 text-[12px] font-semibold">
+          <span className="t-green">{formatINR(report.income)} in</span>
+          <span className="t-red">{formatINR(report.expense)} out</span>
+          {trendPct !== null && (
+            <span className="t-secondary">
+              {trendUp ? "↑" : "↓"} {trendPct}% vs last mo.
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Budget pace */}
+      {/* Budget pace (mockup: padding 14px, 6px red track, 12px note) */}
       {pace.length > 0 && (
-        <div className="card mx-5 mt-2.5 p-3.5">
+        <div className="card p-3.5 mb-2.5">
           <Link href="/app/budgets" className="block">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[12px] font-semibold t-secondary">
-                Personal budget pace
-              </span>
-              <span className="text-[12px] font-semibold t-primary num">
-                {formatINR(paceTotal)} / {formatINR(budgetTotal)}
+            <div className="flex items-center justify-between mb-1.5 text-[12px] font-semibold">
+              <span className="t-secondary">Personal budget pace</span>
+              <span className="t-primary num">
+                {formatINR(paceTotal)} / {budgetTotal.toLocaleString("en-IN")}
               </span>
             </div>
-            <div className="h-[6px] rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.07)", marginBottom: 8 }}>
+            <div
+              className="h-[6px] rounded-[3px] overflow-hidden mb-2"
+              style={{ background: "rgba(0,0,0,0.07)" }}
+            >
               <div
-                className="h-full"
+                className="h-full rounded-full"
                 style={{
                   width: `${Math.min(100, (paceTotal / Math.max(budgetTotal, 1)) * 100)}%`,
                   background: "var(--red)",
@@ -135,50 +198,30 @@ export default async function DashboardPage() {
               />
             </div>
             <div className="text-[12px] t-secondary">
-              {Math.round((paceTotal / Math.max(budgetTotal, 1)) * 100)}% of budget used
+              {budgetHitDay(paceTotal, budgetTotal, elapsedDay, daysInMonth) !== null ? (
+                <>
+                  At this pace, you&apos;ll hit budget by{" "}
+                  <b className="t-primary">
+                    {ordinal(budgetHitDay(paceTotal, budgetTotal, elapsedDay, daysInMonth)!)}
+                  </b>
+                  {" "}·{" "}
+                  {daysInMonth - budgetHitDay(paceTotal, budgetTotal, elapsedDay, daysInMonth)!} days early
+                </>
+              ) : paceTotal > 0 && paceTotal >= budgetTotal && budgetTotal > 0 ? (
+                <>Over budget by {formatINR(paceTotal - budgetTotal)}</>
+              ) : (
+                <>{Math.round((paceTotal / Math.max(budgetTotal, 1)) * 100)}% of budget used</>
+              )}
             </div>
           </Link>
         </div>
       )}
 
-      {/* Reminders */}
-      {reminders.length > 0 && (
-        <>
-          <div className="px-5">
-            <div className="section-label" style={{ padding: "20px 0 8px" }}>
-              Upcoming
-            </div>
-            <div className="card p-1.5">
-              {reminders.map((r, i) => (
-                <div
-                  key={r.id}
-                  className={`flex items-center gap-3 rounded-lg px-3.5 py-3 ${
-                    i > 0 ? "border-t" : ""
-                  }`}
-                  style={{ borderColor: "var(--border)" }}
-                >
-                  <div className="txn-icon">
-                    <IconBell size={17} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="txn-title truncate">{r.title}</div>
-                    <div className="txn-sub">Due {formatFullDate(r.due_date)}</div>
-                  </div>
-                  {r.amount !== null && (
-                    <span className="text-[13px] font-bold num t-red">{formatINR(r.amount)}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Top mover insight */}
+      {/* Top mover (mockup: padding 14px, 32px red icon tile, title 12px / sub 11px) */}
       {topMover ? (
-        <div className="card mx-5 mt-2.5 p-3.5 flex items-center gap-2.5">
+        <div className="card p-3.5 mb-2.5 flex items-center gap-2.5">
           <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            className="w-8 h-8 rounded-[8px] flex items-center justify-center shrink-0"
             style={{ background: "rgba(176,86,47,0.08)", color: "var(--red)" }}
           >
             <IconTrendingUp size={16} />
@@ -188,45 +231,52 @@ export default async function DashboardPage() {
               {topMover.category.name} is your top mover
             </div>
             <div className="text-[11px] font-semibold t-secondary mt-0.5">
-              {formatINR(topMover.spent)} of {formatINR(topMover.budget)} budget used
+              {moverDelta > 0
+                ? `${formatINR(moverDelta)} more than last month`
+                : moverDelta < 0
+                  ? `${formatINR(Math.abs(moverDelta))} less than last month`
+                  : `Same as last month`}
             </div>
           </div>
         </div>
       ) : null}
 
-      {/* Where it went */}
-      <div className="px-5">
-        <div className="flex items-center justify-between pt-5">
-          <div className="text-[13px] font-bold">Where it went</div>
-          <Link href="/app/reports" className="text-[12px] font-semibold t-secondary">
-            Full report
-          </Link>
-        </div>
+      {/* Where it went — section head (mockup: margin 16px top / 8px bottom) */}
+      <div className="flex items-center justify-between mt-4 mb-2">
+        <div className="text-[13px] font-bold">Where it went</div>
+        <Link href="/app/reports" className="text-[12px] font-semibold t-secondary">
+          Full report
+        </Link>
       </div>
 
       {report.byCategory.length > 0 ? (
-        <div className="card mx-5 mt-2 px-3.5 py-3">
+        <div className="card px-3.5 py-3">
           {report.byCategory.map((row, i) => {
             const widest = report.byCategory[0].amount;
+            const last = i === report.byCategory.length - 1;
             return (
               <Link
                 key={row.categoryId ?? "uncat"}
                 href={`/app/categories/${row.categoryId ?? "uncategorised"}`}
-                className={i > 0 ? "block mt-2.5" : "block"}
+                className="block"
               >
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center justify-between mb-2.5">
                   <span className="flex items-center gap-2 text-[12px] font-semibold">
-                    <span className="txn-icon" style={{ width: 24, height: 24, borderRadius: 6 }}>
-                      {createElement(categoryIcon(row.name, "expense"), { size: 14, stroke: 1.8 })}
-                    </span>
+                    <span className="h-2 w-2 rounded-full" style={{ background: row.color }} />
                     {row.name}
                   </span>
                   <span className="text-[12px] font-semibold num">{formatINR(row.amount)}</span>
                 </div>
-                <div className="h-[5px] rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.06)", marginBottom: 8 }}>
+                <div
+                  className={`h-[5px] rounded-[3px] overflow-hidden ${last ? "mb-0" : "mb-3"}`}
+                  style={{ background: "rgba(0,0,0,0.06)" }}
+                >
                   <div
-                    className="h-full"
-                    style={{ width: `${Math.max(4, (row.amount / Math.max(widest, 1)) * 100)}%`, background: row.color }}
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${Math.max(4, (row.amount / Math.max(widest, 1)) * 100)}%`,
+                      background: row.color,
+                    }}
                   />
                 </div>
               </Link>
@@ -234,7 +284,7 @@ export default async function DashboardPage() {
           })}
         </div>
       ) : (
-        <div className="card mx-5 mt-2 p-6 text-center">
+        <div className="card px-6 py-6 text-center">
           <p className="text-[13.5px] font-bold mb-1">No spending this month</p>
           <p className="text-[12.5px] font-semibold t-secondary">
             Tap + to log your first expense or revenue.
@@ -242,45 +292,6 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Expenses by member */}
-      {spendByMember.size > 1 && (
-        <div className="px-5">
-          <div className="section-label" style={{ padding: "20px 0 8px" }}>
-            By member
-          </div>
-          <div className="card p-1.5">
-            {members
-              .filter((m) => (spendByMember.get(m.id) ?? 0) > 0 || m.id === user.id)
-              .map((m, i) => {
-                const spent = spendByMember.get(m.id) ?? 0;
-                return (
-                  <div
-                    key={m.id}
-                    className={`flex items-center gap-3 px-3.5 py-3 ${i > 0 ? "border-t" : ""}`}
-                    style={{ borderColor: "var(--border)" }}
-                  >
-                    <div className="avatar" style={{ width: 34, height: 34, fontSize: 12 }}>
-                      {initials(m.name)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="txn-title truncate">{m.name}</div>
-                      <div className="txn-sub">
-                        {m.id === me?.id ? "You" : m.role === "admin" ? "Admin" : "Member"}
-                      </div>
-                    </div>
-                    <span className="text-[13.5px] font-bold num t-red">
-                      {spent > 0 ? formatINR(spent) : "—"}
-                    </span>
-                  </div>
-                );
-              })}
-          </div>
-        </div>
-      )}
-
-      <div className="text-center text-[11px] font-semibold t-tertiary pt-8 pb-2">
-        {label} · {me?.name ?? "You"}
       </div>
-    </div>
   );
 }

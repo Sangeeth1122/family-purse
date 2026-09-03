@@ -1,10 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Budget, Category, Transaction, UserRow } from "@/lib/types";
+import type { Category, LegacyBudget, Transaction, UserRow } from "@/lib/types";
 
 export type ReportData = {
   categories: Category[];
   txns: Transaction[];
-  budgets: Budget[];
+  budgets: LegacyBudget[];
   members: UserRow[];
 };
 
@@ -29,7 +29,7 @@ export async function loadReportData(): Promise<ReportData> {
   return {
     categories: (catsRes.data ?? []) as Category[],
     txns: (txnsRes.data ?? []) as Transaction[],
-    budgets: (budgetsRes.data ?? []) as Budget[],
+    budgets: (budgetsRes.data ?? []) as LegacyBudget[],
     members: (membersRes.data ?? []) as UserRow[],
   };
 }

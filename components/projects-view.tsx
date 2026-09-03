@@ -53,9 +53,12 @@ export default function ProjectsView({
     <div className="min-h-screen pb-28">
       <div className="flex items-center justify-between px-5 pt-5 pb-2">
         <h1 className="text-[20px] font-bold" style={{ letterSpacing: "-0.01em" }}>Projects</h1>
-        <button type="button" className="icon-btn" style={{ width: 36, height: 36 }} aria-label="Filter">
-          <IconFilter size={18} />
-        </button>
+        <div className="flex items-center gap-2">
+          {isAdmin && <AddProjectButton />}
+          <button type="button" className="icon-btn" style={{ width: 36, height: 36 }} aria-label="Filter">
+            <IconFilter size={18} />
+          </button>
+        </div>
       </div>
 
       {projects.length > 0 && (
@@ -175,8 +178,6 @@ export default function ProjectsView({
           })}
         </div>
       )}
-
-      {isAdmin && <AddProjectButton />}
     </div>
   );
 }

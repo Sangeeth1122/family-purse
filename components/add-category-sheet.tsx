@@ -54,7 +54,7 @@ export default function AddCategorySheet({ familyId }: { familyId: string }) {
           aria-modal="true"
           aria-labelledby="add-category-title"
         >
-          <div className="sheet" onClick={(e) => e.stopPropagation()}>
+          <div className="sheet sheet-category" onClick={(e) => e.stopPropagation()}>
             <div className="handle" />
             <div className="sheet-head">
               <h2 id="add-category-title">Add category</h2>
@@ -76,7 +76,7 @@ export default function AddCategorySheet({ familyId }: { familyId: string }) {
               </label>
               <div className="field">
                 <span className="field-label">Colour</span>
-                <div className="flex gap-2.5 flex-wrap">
+                <div className="flex gap-3 flex-wrap">
                   {SWATCHES.map((c) => (
                     <button
                       key={c}
@@ -84,8 +84,8 @@ export default function AddCategorySheet({ familyId }: { familyId: string }) {
                       aria-label={`Colour ${c}`}
                       className="dot"
                       style={{
-                        width: 30,
-                        height: 30,
+                        width: 34,
+                        height: 34,
                         borderRadius: "50%",
                         background: c,
                         outline: color === c ? `2px solid var(--text)` : "none",

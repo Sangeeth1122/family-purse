@@ -10,6 +10,7 @@ import {
   IconBellOff,
   IconBuildingBank,
   IconPlus,
+  IconUser,
   IconX,
 } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
@@ -57,6 +58,9 @@ function LoanSheetBody({
   const [members, setMembers] = useState<UserRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [counterpartyType, setCounterpartyType] = useState<"external" | "family">(
+    loan?.counterparty_user_id ? "family" : "external",
+  );
 
   useEffect(() => {
     let alive = true;
@@ -74,8 +78,11 @@ function LoanSheetBody({
   const rateNum = rate.trim() ? parseFloat(toINRInput(rate)) : 0;
 
   function validate(): string | null {
-    if (!memberId && !externalName.trim()) {
-      return "Pick a family member or type an external name.";
+    if (counterpartyType === "family" && !memberId) {
+      return "Pick a family member.";
+    }
+    if (counterpartyType === "external" && !externalName.trim()) {
+      return "Enter an external name.";
     }
     if (principalNum <= 0) return "Enter a valid principal amount.";
     if (rate.trim() && (rateNum <= 0 || rateNum > 100)) {
@@ -186,80 +193,79 @@ function LoanSheetBody({
       </div>
 
       <div className="field">
-        <span className="field-label">Who&apos;s this with</span>
-        <div className="avatar-row" style={{ overflowX: "auto" }}>
-          {members.map((m) => (
-            <div
-              key={m.id}
-              className={`avatar-chip ${memberId === m.id ? "selected" : ""}`}
-              style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 60 }}
-            >
-              <button
-                type="button"
-                aria-pressed={memberId === m.id}
-                aria-label={`Loan with ${m.name}`}
-                className={`avatar`}
-                style={{ width: 48, height: 48 }}
-                onClick={() => {
-                  setMemberId(memberId === m.id ? null : m.id);
-                  if (externalName.trim()) setExternalName("");
-                }}
-              >
-                {initials(m.name)}
-              </button>
-              <span>{m.name}</span>
-            </div>
-          ))}
-          <div
-            className={`avatar-chip ${externalName.trim() ? "selected" : ""}`}
-            style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 60 }}
+        <span className="field-label">Counterparty</span>
+        <div className="segmented">
+          <button
+            type="button"
+            className={`seg ${counterpartyType === "family" ? "active" : ""}`}
+            onClick={() => {
+              setCounterpartyType("family");
+              if (!memberId && members.length > 0) setMemberId(members[0].id);
+              setExternalName("");
+            }}
           >
-            <button
-              type="button"
-              aria-pressed={Boolean(externalName.trim())}
-              aria-label="Loan with an external person or bank"
-              className={`avatar external ${externalName.trim() ? "selected" : ""}`}
-              style={{ width: 48, height: 48 }}
-              onClick={() => {
-                setExternalName("");
-                setMemberId(null);
-              }}
-            >
-              <IconBuildingBank size={18} />
-            </button>
-            <span>External</span>
+            <IconUser size={14} /> Family member
+          </button>
+          <button
+            type="button"
+            className={`seg ${counterpartyType === "external" ? "active" : ""}`}
+            onClick={() => {
+              setCounterpartyType("external");
+              setMemberId(null);
+            }}
+          >
+            <IconBuildingBank size={14} /> External
+          </button>
+        </div>
+      </div>
+
+      {counterpartyType === "family" && members.length > 0 && (
+        <div className="field">
+          <span className="field-label">Family member</span>
+          <div className="avatar-row" style={{ overflowX: "auto" }}>
+            {members.map((m) => (
+              <div
+                key={m.id}
+                className={`avatar-chip ${memberId === m.id ? "selected" : ""}`}
+                style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 60 }}
+              >
+                <button
+                  type="button"
+                  aria-pressed={memberId === m.id}
+                  aria-label={`Loan with ${m.name}`}
+                  className={`avatar`}
+                  style={{ width: 48, height: 48 }}
+                  onClick={() => setMemberId(memberId === m.id ? null : m.id)}
+                >
+                  {initials(m.name)}
+                </button>
+                <span>{m.name}</span>
+              </div>
+            ))}
           </div>
         </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            margin: "14px 0",
-            fontSize: 11,
-            fontWeight: 700,
-            color: "var(--text-tertiary)",
-          }}
-        >
-          <span style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.07)" }} />
-          or
-          <span style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.07)" }} />
+      )}
+
+      {counterpartyType === "external" && (
+        <div className="field">
+          <span className="field-label">External name</span>
+          <input
+            className="input"
+            aria-label="External name"
+            placeholder="External name — e.g. HDFC Personal Loan"
+            value={externalName}
+            onChange={(e) => setExternalName(e.target.value)}
+            maxLength={80}
+          />
+          <p className="field-hint">Enter the name of the person, bank, or institution outside the family.</p>
         </div>
-        <input
-          className="input"
-          aria-label="External name"
-          placeholder="External name — e.g. HDFC Personal Loan"
-          value={externalName}
-          onChange={(e) => {
-            setExternalName(e.target.value);
-            if (e.target.value.trim()) setMemberId(null);
-          }}
-          maxLength={80}
-        />
-        <p className="field-hint">
-          Pick a family member, or type a name for anyone outside the family.
+      )}
+
+      {counterpartyType === "family" && members.length === 0 && (
+        <p className="text-[12.5px] font-semibold t-tertiary">
+          No other family members to select. Add members first, or choose External.
         </p>
-      </div>
+      )}
 
       <label className="field">
         <span className="field-label">Principal amount</span>
@@ -411,23 +417,18 @@ export default function AddLoanSheet({
   );
 }
 
-/** Floating "+" Add Loan button (loans list page). */
+/** Header "+" Add Loan button (loans list page) — matches AddCardButton style. */
 export function AddLoanButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button
         type="button"
+        className="icon-btn"
         aria-label="Add loan"
         onClick={() => setOpen(true)}
-        className="fixed left-1/2 -translate-x-1/2 z-40 w-[54px] h-[54px] rounded-full shadow-lg flex items-center justify-center"
-        style={{
-          background: "var(--text)",
-          color: "var(--bg)",
-          bottom: "104px",
-        }}
       >
-        <IconPlus size={22} stroke={2.5} />
+        <IconPlus size={18} />
       </button>
       <AddLoanSheet open={open} onClose={() => setOpen(false)} />
     </>

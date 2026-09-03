@@ -4,9 +4,10 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { formatDayMonth } from "@/lib/format";
 import type {
-  Budget,
   Category,
+  LegacyBudget,
   Project,
+  ProjectInvitation,
   ProjectMember,
   Transaction,
   UserRow,
@@ -38,7 +39,7 @@ export async function generateMetadata({
   };
 }
 
-function periodLabel(b: Budget): string {
+function periodLabel(b: LegacyBudget): string {
   if (b.period === "monthly") return "Monthly";
   if (b.period === "one_time") return "One-time";
   if (b.start_date && b.end_date) {
@@ -59,7 +60,7 @@ export default async function ProjectDetailPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [projectRes, meRes, membersRes, txnsRes, catsRes, usersRes, budgetsRes] =
+  const [projectRes, meRes, membersRes, txnsRes, catsRes, usersRes, budgetsRes, invitationsRes] =
     await Promise.all([
       supabase.from("projects").select("*").eq("id", id).maybeSingle(),
       supabase.from("users").select("*").eq("id", user.id).maybeSingle(),
@@ -68,6 +69,12 @@ export default async function ProjectDetailPage({
       supabase.from("categories").select("*").order("sort_order"),
       supabase.from("users").select("*").order("name"),
       supabase.from("budgets").select("*"),
+      supabase
+        .from("project_invitations")
+        .select("*")
+        .eq("project_id", id)
+        .eq("status", "pending")
+        .order("created_at"),
     ]);
 
   if (projectRes.error) {
@@ -100,7 +107,8 @@ export default async function ProjectDetailPage({
   const txns = (txnsRes.data ?? []) as Transaction[];
   const cats = (catsRes.data ?? []) as Category[];
   const users = (usersRes.data ?? []) as UserRow[];
-  const budgets = (budgetsRes.data ?? []) as Budget[];
+  const budgets = (budgetsRes.data ?? []) as LegacyBudget[];
+  const invitations = (invitationsRes.data ?? []) as ProjectInvitation[];
 
   const projectMembers = members.filter((m) => m.project_id === project.id);
   const myRole = projectMembers.find((m) => m.user_id === user.id)?.role ?? null;
@@ -157,6 +165,10 @@ export default async function ProjectDetailPage({
     };
   });
 
+  const familyMembers = users
+    .filter((u) => u.family_id === me?.family_id)
+    .map((u) => ({ id: u.id, name: u.name }));
+
   return (
     <ProjectDetailView
       project={project}
@@ -166,6 +178,8 @@ export default async function ProjectDetailPage({
       people={people}
       catBudgets={catBudgets}
       txnRows={txnRows}
+      invitations={invitations}
+      familyMembers={familyMembers}
     />
   );
 }

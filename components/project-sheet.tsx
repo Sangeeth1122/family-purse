@@ -356,24 +356,18 @@ export default function ProjectSheet({
   );
 }
 
-/** Floating "+" Add Project button (projects list page, family admin only). */
+/** Header "+" Add Project button (projects list page) — matches AddCardButton style. */
 export function AddProjectButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button
         type="button"
+        className="icon-btn"
         aria-label="Add project"
         onClick={() => setOpen(true)}
-        className="fixed z-40 w-[52px] h-[52px] rounded-full shadow-lg flex items-center justify-center"
-        style={{
-          background: "var(--text)",
-          color: "var(--bg)",
-          bottom: "100px",
-          right: "calc(50% - 195px)",
-        }}
       >
-        <IconPlus size={22} stroke={2.5} />
+        <IconPlus size={18} />
       </button>
       <ProjectSheet open={open} onClose={() => setOpen(false)} />
     </>

@@ -16,10 +16,12 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { formatINRExact, initials } from "@/lib/format";
 import { categoryIcon } from "@/lib/category-icons";
-import type { Project, ProjectMember, ProjectRole } from "@/lib/types";
+import type { Project, ProjectInvitation, ProjectMember, ProjectRole } from "@/lib/types";
 import AddTransactionSheet from "@/components/add-transaction-sheet";
 import ProjectSheet from "@/components/project-sheet";
 import ProjectMembersSheet from "@/components/project-members-sheet";
+import ProjectInviteSheet from "@/components/project-invite-sheet";
+import PendingInvitations from "@/components/pending-invitations";
 
 export type ProjectTxnRow = {
   key: string;
@@ -63,6 +65,8 @@ export default function ProjectDetailView({
   people,
   catBudgets,
   txnRows,
+  invitations,
+  familyMembers,
 }: {
   project: Project;
   meId: string;
@@ -71,12 +75,15 @@ export default function ProjectDetailView({
   people: ProjectPerson[];
   catBudgets: ProjectCatBudget[];
   txnRows: ProjectTxnRow[];
+  invitations: ProjectInvitation[];
+  familyMembers: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const goBack = useGoBack("/app/projects");
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [managingMembers, setManagingMembers] = useState(false);
+  const [inviting, setInviting] = useState(false);
   const [addingTxn, setAddingTxn] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -275,15 +282,32 @@ export default function ProjectDetailView({
           </span>
         </div>
         {canManageMembers && (
-          <button
-            type="button"
-            className="text-[12.5px] font-bold t-primary shrink-0"
-            onClick={() => setManagingMembers(true)}
-          >
-            + Add person
-          </button>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              className="text-[12.5px] font-bold t-primary"
+              onClick={() => setInviting(true)}
+            >
+              + Invite
+            </button>
+            <button
+              type="button"
+              className="text-[12.5px] font-bold t-primary"
+              onClick={() => setManagingMembers(true)}
+            >
+              + Add person
+            </button>
+          </div>
         )}
       </div>
+
+      {/* ---------- Pending invitations ---------- */}
+      {invitations.length > 0 && (
+        <PendingInvitations
+          invitations={invitations}
+          nameMap={new Map<string, string>([...familyMembers.map((m): [string, string] => [m.id, m.name]), ...people.map((p): [string, string] => [p.user_id, p.name])])}
+        />
+      )}
 
       {/* ---------- Category budgets ---------- */}
       {catBudgets.length > 0 && (
@@ -412,6 +436,15 @@ export default function ProjectDetailView({
           meId={meId}
           myRole={myRole}
           onClose={() => setManagingMembers(false)}
+        />
+      )}
+
+      {inviting && (
+        <ProjectInviteSheet
+          project={project}
+          existingMembers={memberSetList}
+          familyMembers={familyMembers}
+          onClose={() => setInviting(false)}
         />
       )}
 

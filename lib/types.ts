@@ -31,9 +31,25 @@ export type Category = {
   color: string;
   system: boolean;
   sort_order: number;
+  active: boolean;
 };
 
 export type Budget = {
+  id: string;
+  family_id: string;
+  name: string;
+  type: "monthly" | "project";
+  total_amount: number;
+  start_date: string;
+  end_date: string;
+  project_id: string | null;
+  created_by: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type LegacyBudget = {
   id: string;
   scope_type: "personal" | "project";
   scope_id: string;
@@ -42,6 +58,37 @@ export type Budget = {
   period: "monthly" | "one_time" | "custom";
   start_date: string | null;
   end_date: string | null;
+};
+
+export type BudgetListItem = {
+  id: string;
+  name: string;
+  type: "monthly" | "project";
+  total_amount: number;
+  start_date: string;
+  end_date: string;
+  project_id: string | null;
+  active: boolean;
+  created_at: string;
+  total_spent: number;
+  total_allocated: number;
+};
+
+export type BudgetAllocation = {
+  id: string;
+  budget_id: string;
+  category_id: string;
+  amount: number;
+  created_at: string;
+  category_name?: string;
+  category_color?: string;
+  spent?: number;
+};
+
+export type BudgetDetail = {
+  budget: Budget;
+  allocations: (BudgetAllocation & { category_name: string; category_color: string; spent: number })[];
+  total_spent: number;
 };
 
 export type UserRow = {
@@ -114,6 +161,20 @@ export type ProjectMember = {
   project_id: string;
   user_id: string;
   role: ProjectRole;
+};
+
+export type ProjectInvitation = {
+  id: string;
+  project_id: string;
+  inviter_id: string;
+  invitee_id: string;
+  role: ProjectRole;
+  status: "pending" | "accepted" | "cancelled";
+  token: string;
+  created_at: string;
+  expires_at: string;
+  accepted_at: string | null;
+  cancelled_at: string | null;
 };
 
 export type MemberWithSpend = UserRow & {

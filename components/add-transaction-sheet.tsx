@@ -829,7 +829,9 @@ export default function AddTransactionSheet({
                               Uncategorised
                             </button>
                           )}
-                          {categories.map((c) => (
+                          {categories
+                              .filter((c) => c.active || c.system)
+                              .map((c) => (
                             <button
                               key={c.id}
                               type="button"

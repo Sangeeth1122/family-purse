@@ -4,16 +4,17 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  IconArrowDown,
   IconGripVertical,
   IconPencil,
   IconPlus,
   IconTrash,
+  IconX,
 } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatINR } from "@/lib/format";
 import type { Category } from "@/lib/types";
 import EditCategorySheet from "@/components/edit-category-sheet";
-import DeleteCategoryDialog from "@/components/delete-category-dialog";
 
 export default function CategoryManagerView({
   categories,
@@ -29,9 +30,9 @@ export default function CategoryManagerView({
   meId: string;
 }) {
   const router = useRouter();
-  const [order, setOrder] = useState<string[]>(() => categories.map((c) => c.id));
+  const [order, setOrder] = useState<string[]>(() => categories.filter((c) => c.active).map((c) => c.id));
   const [prevCategoryIds, setPrevCategoryIds] = useState(() =>
-    categories.map((c) => c.id).join(","),
+    categories.filter((c) => c.active).map((c) => c.id).join(","),
   );
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
@@ -39,12 +40,15 @@ export default function CategoryManagerView({
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Category | null>(null);
   const [creating, setCreating] = useState(false);
-  const [deleting, setDeleting] = useState<Category | null>(null);
+  const [toggling, setToggling] = useState<string | null>(null);
 
-  const categoryIds = categories.map((c) => c.id).join(",");
+  const activeCategories = categories.filter((c) => c.active);
+  const inactiveCategories = categories.filter((c) => !c.active);
+
+  const categoryIds = activeCategories.map((c) => c.id).join(",");
   if (categoryIds !== prevCategoryIds && dragIndex === null) {
     setPrevCategoryIds(categoryIds);
-    setOrder(categories.map((c) => c.id));
+    setOrder(activeCategories.map((c) => c.id));
   }
 
   const byId = new Map(categories.map((c) => [c.id, c]));
@@ -58,7 +62,7 @@ export default function CategoryManagerView({
     setBusy(false);
     if (err) {
       setError(err.message);
-      setOrder(categories.map((c) => c.id));
+      setOrder(activeCategories.map((c) => c.id));
       return;
     }
     router.refresh();
@@ -77,6 +81,23 @@ export default function CategoryManagerView({
     setDragIndex(null);
     setOverIndex(null);
     void persist(next);
+  }
+
+  async function toggleActive(category: Category) {
+    setToggling(category.id);
+    setError(null);
+    try {
+      const { error: err } = await createClient()
+        .from("categories")
+        .update({ active: !category.active })
+        .eq("id", category.id);
+      if (err) throw new Error(err.message);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update category");
+    } finally {
+      setToggling(null);
+    }
   }
 
   return (
@@ -150,16 +171,57 @@ export default function CategoryManagerView({
               </button>
               <button
                 type="button"
-                className="p-1.5 t-red"
-                aria-label={`Delete ${c.name}`}
-                onClick={() => setDeleting(c)}
+                className="p-1.5 t-secondary"
+                aria-label={`Deactivate ${c.name}`}
+                onClick={() => toggleActive(c)}
+                disabled={toggling === c.id}
               >
-                <IconTrash size={16} />
+                {toggling === c.id ? <IconX size={16} /> : <IconTrash size={16} />}
               </button>
             </div>
           );
         })}
       </div>
+
+      {inactiveCategories.length > 0 && (
+        <div className="card mx-5 mt-3 p-1.5">
+          <div className="flex items-center gap-2 px-3 py-3">
+            <IconArrowDown size={16} className="t-tertiary" />
+            <span className="text-[12.5px] font-bold uppercase tracking-wide t-secondary">
+              Inactive ({inactiveCategories.length})
+            </span>
+          </div>
+          {inactiveCategories.map((c) => {
+            const budget = myBudget[c.id] ?? 0;
+            const count = tagged[c.id] ?? 0;
+            return (
+              <div
+                key={c.id}
+                className={`flex items-center gap-2.5 px-3 py-3 rounded-lg transition-shadow border-t`}
+                style={{ borderColor: "var(--border)", opacity: 0.5 }}
+              >
+                <span className="dot" style={{ background: c.color }} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[14px] font-bold truncate">{c.name}</div>
+                  <div className="text-[11.5px] font-semibold t-tertiary">
+                    {budget > 0 ? `${formatINR(budget)} / month` : "No budget set"}
+                    {count > 0 && ` · ${count} txn${count === 1 ? "" : "s"}`}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="p-1.5 t-green"
+                  aria-label={`Reactivate ${c.name}`}
+                  onClick={() => toggleActive(c)}
+                  disabled={toggling === c.id}
+                >
+                  {toggling === c.id ? <IconX size={16} /> : <IconArrowDown size={16} />}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <button
         type="button"
@@ -188,16 +250,7 @@ export default function CategoryManagerView({
           familyId={familyId}
           meId={meId}
           category={editing}
-          budget={myBudget[editing.id] ?? 0}
           onClose={() => setEditing(null)}
-        />
-      )}
-      {deleting && (
-        <DeleteCategoryDialog
-          category={deleting}
-          options={categories}
-          tagged={tagged[deleting.id] ?? 0}
-          onClose={() => setDeleting(null)}
         />
       )}
     </div>

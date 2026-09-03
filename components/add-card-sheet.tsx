@@ -103,7 +103,7 @@ export default function AddCardSheet({
       aria-modal="true"
       aria-labelledby="add-card-title"
     >
-      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+      <div className="sheet sheet-addcard" onClick={(e) => e.stopPropagation()}>
         <div className="handle" />
         <div className="sheet-head">
           <h2 id="add-card-title">{card ? "Edit card" : "Add card"}</h2>

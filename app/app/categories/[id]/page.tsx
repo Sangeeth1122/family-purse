@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import type { Budget, Category, Transaction, UserRow } from "@/lib/types";
+import type { Category, Transaction, UserRow, LegacyBudget } from "@/lib/types";
 import CategoryTransactionsClient from "@/components/category-transactions-client";
 
 function monthBounds(d = new Date()) {
@@ -66,7 +66,7 @@ export default async function CategoryTransactionsPage({
 
   const txns = (txnsRes.data ?? []) as Transaction[];
   const cats = (catsRes.data ?? []) as Category[];
-  const budgets = (budgetsRes.data ?? []) as Budget[];
+  const budgets = (budgetsRes.data ?? []) as LegacyBudget[];
   const members = (membersRes.data ?? []) as UserRow[];
 
   const filtered = txns.filter((t) =>

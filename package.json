@@ -15,6 +15,8 @@
     "db:test-projects": "tsx scripts/test-projects.ts",
     "db:test-reports": "tsx scripts/test-reports.ts",
     "db:test-pwa": "tsx scripts/test-pwa.ts",
+    "db:test-invitations": "tsx scripts/test-invitations.ts",
+    "db:test-budgets": "tsx scripts/test-budgets.ts",
     "build:icons": "tsx scripts/build-icons.ts",
     "db:validate": "tsx scripts/validate-migrations.ts",
     "db:dev": "supabase db reset"

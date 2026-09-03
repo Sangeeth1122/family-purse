@@ -75,9 +75,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col px-6 pt-14 pb-8">
-      <h1 className="text-center text-[20px] font-bold">Family Purse</h1>
-      <p className="text-center text-[13px] font-semibold t-secondary mt-1 mb-8">
+    <div className="min-h-[520px] flex flex-col px-1 pt-0 pb-8">
+      <h1 className="text-center text-[20px] font-bold mb-1.5">Family Purse</h1>
+      <p className="text-center text-[13px] font-semibold t-secondary mt-1 mb-7">
         Track it together, decide with clarity
       </p>
 
@@ -162,7 +162,7 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <div className="flex items-center gap-3 my-2 mb-5">
+      <div className="flex items-center gap-3 my-2 mb-[18px]">
         <div className="flex-1 h-px" style={{ background: "rgba(0,0,0,0.08)" }} />
         <span className="text-[11px] font-semibold t-secondary">OR</span>
         <div className="flex-1 h-px" style={{ background: "rgba(0,0,0,0.08)" }} />

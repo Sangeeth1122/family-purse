@@ -1,16 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { IconWallet, IconLock, IconCalendar, IconFolderOpen } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/server";
-import { formatINR } from "@/lib/format";
-import { summarizeMonth, reportTransactions } from "@/lib/report";
-import type { Budget, Category, Transaction, UserRow } from "@/lib/types";
-import AddCategorySheet from "@/components/add-category-sheet";
-
-function monthBounds(d = new Date()) {
-  const from = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-  return { from, to: last.toISOString().slice(0, 10), day: d.getDate(), days: last.getDate() };
-}
+import { formatINR, formatDayMonth } from "@/lib/format";
+import type { Budget } from "@/lib/types";
+import { AddBudgetButton } from "@/components/add-budget-sheet";
 
 export default async function BudgetsPage() {
   const supabase = await createClient();
@@ -19,134 +13,110 @@ export default async function BudgetsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { from, to, day, days } = monthBounds();
-
-  const [meRes, catsRes, txnsRes, budgetsRes] = await Promise.all([
+  const [meRes, budgetsRes] = await Promise.all([
     supabase.from("users").select("*").eq("id", user.id).maybeSingle(),
-    supabase.from("categories").select("*").order("sort_order"),
-    supabase.from("transactions").select("*"),
-    supabase.from("budgets").select("*"),
+    supabase.rpc("fp_list_budgets", { p_active_only: true }),
   ]);
 
-  const me = meRes.data as UserRow | null;
-  if (catsRes.error || txnsRes.error || budgetsRes.error || meRes.error)
+  const me = meRes.data as { role: string; family_id: string | null } | null;
+  if (meRes.error || budgetsRes.error)
     throw new Error("Could not load budgets.");
-  const categories = (catsRes.data ?? []) as Category[];
-  const allTxns = (txnsRes.data ?? []) as Transaction[];
-  const budgets = (budgetsRes.data ?? []) as Budget[];
-  const isAdmin = me?.role === "admin";
 
-  const catName = (id: string | null) => {
-    const c = categories.find((c) => c.id === id);
-    return c ? { name: c.name, color: c.color } : null;
-  };
-
-  const report = summarizeMonth(reportTransactions(allTxns, from, to), catName);
-
-  const myBudgets = budgets.filter((b) => b.scope_type === "personal" && b.scope_id === user.id);
-  const budgetByCat = new Map(myBudgets.map((b) => [b.category_id, b.amount]));
-  const catSpend = new Map(report.byCategory.map((r) => [r.categoryId, r.amount]));
-
-  const spendTotal = report.byCategory.reduce((s, r) => s + r.amount, 0);
-  const budgetTotal = [...budgetByCat.values()].reduce((s, a) => s + a, 0);
-
-  const rows = categories
-    .filter((c) => !c.system)
-    .map((c) => ({
-      category: c,
-      spent: catSpend.get(c.id) ?? 0,
-      budget: budgetByCat.get(c.id),
-    }))
-    .sort((a, b) => b.spent - a.spent);
+  const budgets = (budgetsRes.data ?? []) as (Budget & { total_spent: number; total_allocated: number })[];
 
   return (
     <div className="min-h-screen pb-24">
-      <div className="flex items-center gap-3 px-5 pt-5 pb-2">
-        <Link href="/app/dashboard" className="icon-btn" style={{ width: 36, height: 36 }} aria-label="Back">
-          <span aria-hidden="true" className="text-[17px] leading-none">‹</span>
-        </Link>
-        <h1 className="text-[20px] font-bold" style={{ letterSpacing: "-0.01em" }}>Budgets & categories</h1>
-      </div>
-
-      <div className="card mx-5 mt-3 p-5 flex items-center justify-between">
-        <div>
-          <div className="text-[12px] font-semibold t-secondary uppercase" style={{ letterSpacing: "0.04em", marginBottom: 6 }}>
-            Spent this month
-          </div>
-          <div>
-            <span className="text-[22px] font-bold num">{formatINR(spendTotal)}</span>
-            {budgetTotal > 0 && (
-              <span className="text-[13px] font-semibold t-tertiary ml-1">of {formatINR(budgetTotal)}</span>
-            )}
-          </div>
+      <div className="flex items-center justify-between px-5 pt-5 pb-4">
+        <div className="flex items-center gap-3">
+          <span className="text-[20px] font-bold" style={{ letterSpacing: "-0.01em" }}>Budgets</span>
         </div>
-        {budgetTotal > 0 && (
-          <div className="text-right">
-            <div
-              className="text-[22px] font-bold num"
-              style={{ color: spendTotal > budgetTotal ? "var(--red)" : "var(--text)" }}
-            >
-              {Math.round((spendTotal / budgetTotal) * 100)}%
-            </div>
-            <div className="text-[11px] font-semibold t-tertiary">used</div>
-          </div>
-        )}
+        {me?.role === "admin" && <AddBudgetButton />}
       </div>
 
-      {isAdmin && me?.family_id && <AddCategorySheet familyId={me.family_id} />}
+      {budgets.length === 0 ? (
+        <div className="card mx-5 p-6 text-center">
+          <IconWallet size={22} className="mx-auto mb-3 t-tertiary" />
+          <p className="text-[13.5px] font-bold mb-1">No budgets yet</p>
+          <p className="text-[12.5px] font-semibold t-secondary leading-relaxed mx-auto max-w-[280px]">
+            Create a monthly or project budget to start tracking your spending.
+          </p>
+          {me?.role === "admin" && me?.family_id && (
+            <AddBudgetButton className="mt-4" />
+          )}
+        </div>
+      ) : (
+        <div className="px-5 space-y-3 pt-2">
+          {budgets.map((b) => {
+            const pct = b.total_amount > 0 ? (b.total_spent / b.total_amount) * 100 : 0;
+            const over = pct > 100;
+            const typeIcon = b.type === "monthly" ? <IconCalendar size={14} /> : <IconFolderOpen size={14} />;
+            const typeLabel = b.type === "monthly" ? "Monthly" : "Project";
+            const unallocated = b.total_amount - (b.total_allocated ?? 0);
 
-      <div className="section-label">Categories · {rows.length}</div>
-
-      <div className="px-5 flex flex-col gap-2.5">
-        {rows.map((row) => {
-          const pct = row.budget ? row.spent / row.budget : null;
-          const over = pct !== null && pct > 1;
-          return (
-            <Link
-              key={row.category.id}
-              href={`/app/categories/${row.category.id}`}
-              className="card p-4 block"
-            >
-              <div className="flex items-center justify-between gap-3 min-w-0">
-                <span className="flex items-center gap-2.5 text-[15px] font-semibold min-w-0">
-                  <span className="dot" style={{ background: row.category.color, width: 9, height: 9 }} />
-                  <span className="truncate">{row.category.name}</span>
-                </span>
-                <span className="text-[14px] num flex-shrink-0">
-                  <span className="font-bold t-primary">
-                    {formatINR(row.spent)}
-                  </span>
-                  {row.budget !== undefined && row.budget !== null && (
-                    <span className="font-semibold t-tertiary"> / {formatINR(row.budget)}</span>
+            return (
+              <Link key={b.id} href={`/app/budgets/${b.id}`} className="card p-4 block">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-[15.5px] font-bold truncate">{b.name}</h2>
+                    <div className="flex items-center gap-2 mt-0.5 text-[12px] font-semibold t-tertiary">
+                      {typeIcon}
+                      <span>{typeLabel}</span>
+                      {b.type === "project" && (
+                        <span>· {formatDayMonth(b.start_date)} – {formatDayMonth(b.end_date)}</span>
+                      )}
+                    </div>
+                  </div>
+                  {b.active ? (
+                    <span className="badge green">Active</span>
+                  ) : (
+                    <span className="badge neutral">Inactive</span>
                   )}
-                </span>
-              </div>
-              {row.budget !== undefined && row.budget !== null && (
-                <>
-                  <div className="h-[5px] rounded-full overflow-hidden mt-2.5" style={{ background: "rgba(0,0,0,0.06)" }}>
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${Math.min(100, Math.max(3, (pct ?? 0) * 100))}%`, background: "var(--text)" }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between mt-2 text-[11px] font-semibold t-tertiary">
-                    <span className={over ? "t-red" : ""}>
-                      {over ? "Over budget" : "On pace"}
-                    </span>
-                    <span>Day {day} of {days}</span>
-                  </div>
-                </>
-              )}
-              {(!row.budget || row.budget === 0) && (
-                <div className="flex items-center justify-between mt-2 text-[11px] font-semibold t-tertiary">
-                  <span>No budget set</span>
-                  <span>—</span>
                 </div>
-              )}
-            </Link>
-          );
-        })}
-      </div>
+
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="text-[22px] font-bold num">{formatINR(b.total_spent)}</span>
+                  <span className="text-[13px] font-semibold t-tertiary">of {formatINR(b.total_amount)}</span>
+                </div>
+
+                <div className="h-[6px] rounded-full overflow-hidden mb-2" style={{ background: "rgba(0,0,0,0.06)" }}>
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${Math.min(100, Math.max(3, pct))}%`,
+                      background: over ? "var(--red)" : "var(--text)",
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] font-semibold t-tertiary mb-2">
+                  <span className={over ? "t-red" : ""}>
+                    {over ? `Over by ${formatINR(b.total_spent - b.total_amount)}` : `${Math.round(pct)}% used`}
+                  </span>
+                  <span>
+                    {b.total_allocated > 0
+                      ? `${formatINR(b.total_allocated)} allocated · ${formatINR(unallocated)} unallocated`
+                      : "No category allocations"}
+                  </span>
+                </div>
+
+                {b.active && (
+                  <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: "var(--border)" }}>
+                    <span className="text-[12px] font-semibold t-secondary">
+                      {b.type === "monthly" ? formatDayMonth(b.start_date) : "Project budget"}
+                    </span>
+                  </div>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      {me && (
+        <div className="text-center text-[11px] font-semibold t-tertiary pt-8 pb-2">
+          {me.role === "admin" ? "Admin" : "Member"} · {me.family_id ? "Family" : "No family"}
+        </div>
+      )}
     </div>
   );
 }

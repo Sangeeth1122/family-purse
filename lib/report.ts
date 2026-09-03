@@ -1,4 +1,4 @@
-import type { Budget, Category, Transaction } from "@/lib/types";
+import type { Category, LegacyBudget, Transaction } from "@/lib/types";
 
 /**
  * Card opening balances are seeded as one-time P&L expenses so the cards module
@@ -286,10 +286,10 @@ export function waterfallLayout(steps: WaterfallStep[]): WaterfallLayout {
 /** Budgets whose period applies to [from, to]: monthly always; one_time on
  * start date inside the range; custom when the range overlaps its dates. */
 export function budgetsForRange(
-  budgets: Budget[],
+  budgets: LegacyBudget[],
   from: string,
   to: string,
-): Budget[] {
+): LegacyBudget[] {
   return budgets.filter((b) => {
     if (b.period === "monthly") return true;
     if (b.period === "one_time") {
@@ -315,7 +315,7 @@ export function budgetPace(
   txns: Transaction[],
   from: string,
   to: string,
-  budgets: Budget[],
+  budgets: LegacyBudget[],
   categoryName: (id: string | null) => { name: string; color: string } | null,
 ): BudgetPaceRow[] {
   const spend = new Map<string | null, number>();

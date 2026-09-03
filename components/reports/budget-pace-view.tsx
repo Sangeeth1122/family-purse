@@ -8,7 +8,7 @@ import {
 } from "@/lib/report";
 import { formatINR } from "@/lib/format";
 import { downloadCSV } from "@/lib/csv";
-import type { Budget, Category, Transaction } from "@/lib/types";
+import type { Category, LegacyBudget, Transaction } from "@/lib/types";
 import ReportFrame from "@/components/reports/report-frame";
 import ReportEmpty from "@/components/reports/report-empty";
 
@@ -19,7 +19,7 @@ export default function BudgetPaceView({
 }: {
   categories: Category[];
   txns: Transaction[];
-  budgets: Budget[];
+  budgets: LegacyBudget[];
 }) {
   const catName = useMemo(() => categoryMeta(categories), [categories]);
 

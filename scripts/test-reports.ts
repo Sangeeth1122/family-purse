@@ -48,15 +48,15 @@ const CARD_HDFC = "dddddddd-dddd-4ddd-8ddd-ddddddddddd1";
 const CARD_AMEX = "dddddddd-dddd-4ddd-8ddd-ddddddddddd2";
 
 const canonicalCategories: Category[] = [
-  { id: CAT_FOOD, family_id: "11111111-1111-4111-8111-111111111111", name: "Food & Dining", color: "#B0562F", system: false, sort_order: 0 },
-  { id: CAT_TRAVEL, family_id: "11111111-1111-4111-8111-111111111111", name: "Travel", color: "#7A6FA8", system: false, sort_order: 1 },
-  { id: CAT_SHOPPING, family_id: "11111111-1111-4111-8111-111111111111", name: "Shopping", color: "#C79A3A", system: false, sort_order: 2 },
-  { id: CAT_GROCERY, family_id: "11111111-1111-4111-8111-111111111111", name: "Groceries", color: "#4A7A5E", system: false, sort_order: 3 },
-  { id: CAT_UTILS, family_id: "11111111-1111-4111-8111-111111111111", name: "Utilities", color: "#3E7CA6", system: false, sort_order: 4 },
-  { id: CAT_OTHER, family_id: "11111111-1111-4111-8111-111111111111", name: "Others", color: "#8A867C", system: false, sort_order: 5 },
-  { id: CAT_INT_PAID, family_id: "11111111-1111-4111-8111-111111111111", name: "Interest Paid", color: "#B0562F", system: true, sort_order: 6 },
-  { id: CAT_INT_RECV, family_id: "11111111-1111-4111-8111-111111111111", name: "Interest Received", color: "#4A7A5E", system: true, sort_order: 7 },
-  { id: CAT_WRITE_OFF, family_id: "11111111-1111-4111-8111-111111111111", name: "Balance Write-off", color: "#8A867C", system: true, sort_order: 8 },
+  { id: CAT_FOOD, family_id: "11111111-1111-4111-8111-111111111111", name: "Food & Dining", color: "#B0562F", system: false, sort_order: 0, active: true },
+  { id: CAT_TRAVEL, family_id: "11111111-1111-4111-8111-111111111111", name: "Travel", color: "#7A6FA8", system: false, sort_order: 1, active: true },
+  { id: CAT_SHOPPING, family_id: "11111111-1111-4111-8111-111111111111", name: "Shopping", color: "#C79A3A", system: false, sort_order: 2, active: true },
+  { id: CAT_GROCERY, family_id: "11111111-1111-4111-8111-111111111111", name: "Groceries", color: "#4A7A5E", system: false, sort_order: 3, active: true },
+  { id: CAT_UTILS, family_id: "11111111-1111-4111-8111-111111111111", name: "Utilities", color: "#3E7CA6", system: false, sort_order: 4, active: true },
+  { id: CAT_OTHER, family_id: "11111111-1111-4111-8111-111111111111", name: "Others", color: "#8A867C", system: false, sort_order: 5, active: true },
+  { id: CAT_INT_PAID, family_id: "11111111-1111-4111-8111-111111111111", name: "Interest Paid", color: "#B0562F", system: true, sort_order: 6, active: true },
+  { id: CAT_INT_RECV, family_id: "11111111-1111-4111-8111-111111111111", name: "Interest Received", color: "#4A7A5E", system: true, sort_order: 7, active: true },
+  { id: CAT_WRITE_OFF, family_id: "11111111-1111-4111-8111-111111111111", name: "Balance Write-off", color: "#8A867C", system: true, sort_order: 8, active: true },
 ];
 
 let failures = 0;

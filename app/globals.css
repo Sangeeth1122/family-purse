@@ -13,6 +13,8 @@
   --blue: #3e7ca6;
   --radius-card: 12px;
   --radius-btn: 8px;
+  --radius-lg: 28px;
+  --frame-bg: #e9e4d8;
 }
 
 @theme inline {
@@ -21,14 +23,16 @@
   --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 body {
-  background: var(--bg);
+  background: var(--frame-bg);
   color: var(--text);
   font-family: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -46,10 +50,18 @@ body {
 
 /* ---- App frame ---- */
 .app-frame {
-  max-width: 430px;
-  margin: 0 auto;
-  min-height: 100vh;
+  width: 390px;
+  max-width: 100%;
+  margin: 24px auto 0;
   background: var(--bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 20px 40px;
+  box-sizing: border-box;
+}
+
+.app-frame > .min-h-screen {
+  min-height: 0;
 }
 
 /* ---- Cards ---- */
@@ -221,12 +233,11 @@ body {
 
 /* ---- Bottom nav ---- */
 .bottom-nav {
-  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-  width: 100%; max-width: 430px;
-  background: var(--card); border-top: 1px solid var(--border);
+  position: sticky; bottom: 0;
+  background: var(--card);
   display: flex; align-items: center; justify-content: space-around;
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-  z-index: 30;
+  margin-top: 18px; padding-top: 14px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 .nav-item {
   display: flex; flex-direction: column; align-items: center; gap: 3px;
@@ -235,12 +246,26 @@ body {
 }
 .nav-item.active { color: var(--text); }
 .nav-add {
-  width: 46px; height: 46px; border-radius: 50%;
+  width: 40px; height: 40px; border-radius: 10px;
   background: var(--text); color: var(--bg);
   display: flex; align-items: center; justify-content: center;
-  margin-top: -26px; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
-  font-size: 22px; cursor: pointer; border: none;
+  margin-top: -14px; font-size: 18px; cursor: pointer; border: none;
 }
+
+/* ---- Manage menu (bottom nav popover) ---- */
+.manage-menu {
+  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+  margin-bottom: 8px; background: var(--card);
+  border-radius: 12px; box-shadow: 0 -4px 20px rgba(0,0,0,0.18);
+  padding: 6px 0; z-index: 60; min-width: 130px;
+}
+.manage-menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 11px 16px; border: none; background: none;
+  font-size: 13px; font-weight: 600; font-family: inherit;
+  color: var(--text); cursor: pointer; text-align: left;
+}
+.manage-menu-item:active { background: rgba(0,0,0,0.05); }
 
 /* ---- Bottom sheet modal ---- */
 .sheet-overlay {
@@ -260,6 +285,27 @@ body {
   display: flex; align-items: center; justify-content: center;
   color: var(--text-secondary); cursor: pointer;
 }
+
+/* ---- Sheet variants (visual-fidelity batch) ---- */
+.sheet.sheet-addcard { padding: 18px 16px 22px; }
+.sheet.sheet-addcard .handle { margin: 0 auto 16px; }
+.sheet.sheet-addcard .sheet-head { margin-bottom: 18px; }
+.sheet.sheet-addcard .sheet-head h2 { font-size: 15px; }
+.sheet.sheet-addcard .close-btn { width: 20px; height: 20px; background: transparent; }
+.sheet.sheet-addcard .field { margin-bottom: 0; }
+.sheet.sheet-addcard .field-label { font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.sheet.sheet-addcard .input { font-size: 14px; border-radius: 10px; padding: 13px 14px; }
+.sheet.sheet-addcard .btn { border-radius: 10px; padding: 13px 14px; }
+
+.sheet.sheet-category .sheet-head { margin-bottom: 20px; }
+.sheet.sheet-category .field { margin-bottom: 20px; }
+.sheet.sheet-category .input { font-size: 15px; }
+
+.sheet.sheet-reminders { padding: 10px 20px 28px; box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.12); }
+.sheet.sheet-reminders .handle { margin: 0 auto 16px; }
+.sheet.sheet-reminders .sheet-head { margin-bottom: 20px; }
+.sheet.sheet-reminders .rem-row { border-bottom: 1px solid var(--border); }
+.sheet.sheet-reminders .rem-row:last-child { border-bottom: none; }
 
 /* ---- Centered dialog ---- */
 .dialog-overlay {

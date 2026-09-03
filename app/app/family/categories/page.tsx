@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { IconLock } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/server";
-import type { Budget, Category, Transaction, UserRow } from "@/lib/types";
+import type { Category, Transaction, UserRow, LegacyBudget } from "@/lib/types";
 import CategoryManagerView from "@/components/category-manager-view";
 
 export default async function FamilyCategoriesPage() {
@@ -38,8 +38,9 @@ export default async function FamilyCategoriesPage() {
     );
   }
 
-  const categories = ((catsRes.data ?? []) as Category[]).filter((c) => !c.system);
-  const budgets = (budgetsRes.data ?? []) as Budget[];
+  const categories = (catsRes.data ?? []) as Category[];
+  const nonSystemCategories = categories.filter((c) => !c.system);
+  const budgets = (budgetsRes.data ?? []) as LegacyBudget[];
   const txns = (txnsRes.data ?? []) as Transaction[];
 
   const myBudget: Record<string, number> = {};
@@ -56,7 +57,7 @@ export default async function FamilyCategoriesPage() {
 
   return (
     <CategoryManagerView
-      categories={categories}
+      categories={nonSystemCategories}
       myBudget={myBudget}
       tagged={tagged}
       familyId={meRow.family_id}

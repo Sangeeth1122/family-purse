@@ -31,8 +31,8 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col px-6 pt-10 pb-8">
-      <div className="flex items-center gap-3 mb-10">
+    <div className="min-h-screen flex flex-col px-1 pt-1 pb-8">
+      <div className="flex items-center gap-3 mb-7">
         <Link href="/login" className="icon-btn">
           <IconArrowLeft size={18} />
         </Link>
@@ -44,12 +44,12 @@ export default function ForgotPasswordPage() {
           <div className="w-14 h-14 rounded-2xl bg-[rgba(74,122,94,0.1)] flex items-center justify-center mb-4">
             <IconMailCheck size={26} className="t-green" />
           </div>
-          <h2 className="text-[16px] font-bold mb-1">Check your email</h2>
+          <h2 className="text-[16px] font-bold mb-1.5">Check your email</h2>
           <p className="text-[13px] font-semibold t-secondary leading-relaxed">
             We&apos;ve sent a reset link to <b className="t-primary">{email}</b>. It&apos;ll
             expire in 30 minutes.
           </p>
-          <Link href="/login" className="btn btn-primary w-full mt-8">
+          <Link href="/login" className="btn btn-primary w-full mt-6">
             Back to login
           </Link>
         </div>

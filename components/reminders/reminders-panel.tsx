@@ -80,11 +80,17 @@ export default function RemindersBell({
     <>
       <button
         type="button"
-        className="icon-btn relative"
+        className="relative"
         aria-label={`Notifications${pending > 0 ? `, ${pending} pending` : ""}`}
         onClick={() => setOpen(true)}
+        style={{
+          width: 34, height: 34, borderRadius: 8,
+          background: "var(--card)", border: "1px solid var(--border)",
+          color: "var(--text)", display: "flex", alignItems: "center",
+          justifyContent: "center", cursor: "pointer", flexShrink: 0,
+        }}
       >
-        <IconBell size={20} />
+        <IconBell size={18} />
         {pending > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-[#B0562F] text-white text-[10px] font-bold flex items-center justify-center">
             {pending}
@@ -99,8 +105,9 @@ export default function RemindersBell({
           role="dialog"
           aria-modal="true"
           aria-labelledby="reminders-title"
+          style={{ background: "transparent" }}
         >
-          <div className="sheet" onClick={(e) => e.stopPropagation()}>
+          <div className="sheet sheet-reminders" onClick={(e) => e.stopPropagation()}>
             <div className="handle" />
             <div className="sheet-head">
               <h2 id="reminders-title">Reminders</h2>
@@ -122,7 +129,7 @@ export default function RemindersBell({
               <div className="px-5">
                 {groups.overdue.length > 0 && (
                   <>
-                    <div className="flex items-center gap-1.5 px-1 pt-2 pb-2">
+                    <div className="flex items-center gap-1.5 px-1 pt-1 pb-2.5">
                       <IconAlertCircle size={14} className="t-secondary" />
                       <h3 className="text-[12px] font-bold uppercase tracking-wide t-secondary">
                         Overdue
@@ -131,7 +138,7 @@ export default function RemindersBell({
                         {groups.overdue.length}
                       </span>
                     </div>
-                    <div className="card p-1.5 mb-1">
+                    <div className="card overflow-hidden mb-2">
                       {groups.overdue.map((r) => (
                         <ReminderRow
                           key={r.id}
@@ -153,7 +160,7 @@ export default function RemindersBell({
 
                 {groups.upcoming.length > 0 && (
                   <>
-                    <div className="flex items-center gap-1.5 px-1 pt-3 pb-2">
+                    <div className="flex items-center gap-1.5 px-1 pt-5 pb-2.5">
                       <IconCalendarTime size={14} className="t-secondary" />
                       <h3 className="text-[12px] font-bold uppercase tracking-wide t-secondary">
                         Upcoming
@@ -162,7 +169,7 @@ export default function RemindersBell({
                         {groups.upcoming.length}
                       </span>
                     </div>
-                    <div className="card p-1.5">
+                    <div className="card overflow-hidden">
                       {groups.upcoming.map((r) => {
                         const inDays = daysFrom(r.due_date);
                         const meta =
@@ -189,7 +196,7 @@ export default function RemindersBell({
                   </>
                 )}
 
-                <p className="field-hint">
+                <p className="field-hint text-center mt-[18px]">
                   Reminders come from loan due dates, card payment dates, and
                   budgets crossing 90% — dismiss one here, or snooze it from the
                   loan/card/budget itself.
@@ -224,7 +231,7 @@ function ReminderRow({
     overdue || r.type === "budget_threshold" ? "t-secondary" : "t-primary";
   return (
     <div
-      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 ${overdue ? "bg-[rgba(176,86,47,0.05)]" : ""}`}
+      className={`rem-row flex items-center gap-3 px-4 py-[13px] ${overdue ? "bg-[rgba(176,86,47,0.05)]" : ""}`}
     >
       <button
         type="button"

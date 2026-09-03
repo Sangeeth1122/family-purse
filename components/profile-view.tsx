@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   IconCalendar,
+  IconChevronRight,
   IconHome,
   IconLogout,
   IconMail,
   IconPencil,
+  IconTags,
   IconUser,
   IconUserPlus,
 } from "@tabler/icons-react";
@@ -78,6 +80,21 @@ export default function ProfileView({
               k="Invite members"
               v=""
               onTap={() => router.push("/app/family/members")}
+            />
+          </div>
+        </>
+      )}
+
+      {family && (
+        <>
+          <div className="section-label">Categories</div>
+          <div className="card mx-5 overflow-hidden">
+            <Row
+              leftIcon={<IconTags size={16} />}
+              k="Manage categories"
+              v=""
+              onTap={() => router.push("/app/family/categories")}
+              rightIcon={<IconChevronRight size={14} />}
             />
           </div>
         </>
