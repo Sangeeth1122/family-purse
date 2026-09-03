@@ -20,8 +20,17 @@ export const metadata: Metadata = {
     title: "Family Purse",
   },
   icons: {
-    icon: "/icon.svg",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon.svg", sizes: "any", type: "image/svg+xml" },
+    ],
     apple: "/apple-touch-icon.png",
+    other: [
+      { rel: "icon", type: "image/png", sizes: "192x192", url: "/app-icon-192.png" },
+      { rel: "icon", type: "image/png", sizes: "512x512", url: "/app-icon-512.png" },
+    ],
   },
 };
 

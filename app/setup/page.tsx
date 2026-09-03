@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { IconWallet } from "@tabler/icons-react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export default function SetupPage() {
@@ -86,10 +85,13 @@ export default function SetupPage() {
   return (
     <div className="min-h-screen flex flex-col px-6 pt-14 pb-8">
       <div className="flex flex-col items-center text-center mb-6">
-        <div className="rounded-2xl bg-[var(--text)] text-[var(--bg)] flex items-center justify-center mb-5"
-          style={{ width: 52, height: 52 }}>
-          <IconWallet size={22} />
-        </div>
+        <img
+          src="/logo-mark.png"
+          alt=""
+          aria-hidden="true"
+          className="w-14 h-14"
+          style={{ width: 52, height: 52 }}
+        />
         <h1 className="text-[20px] font-bold">Set up your family</h1>
         <p className="text-[13px] font-semibold t-secondary leading-relaxed mt-2 px-2">
           Family Purse is shared across the people you trust with money. Start a new family, or
