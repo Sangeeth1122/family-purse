@@ -6,6 +6,7 @@ import {
   IconCalendar,
   IconChevronRight,
   IconHome,
+  IconLink,
   IconLogout,
   IconMail,
   IconPencil,
@@ -16,18 +17,24 @@ import {
 import { initials } from "@/lib/format";
 import type { Family, UserRow } from "@/lib/types";
 import EditNameSheet from "@/components/edit-name-sheet";
+import InviteMembersSheet from "@/components/invite-members-sheet";
 
 export default function ProfileView({
   me,
   family,
+  members,
   defaultEmail,
 }: {
   me: UserRow;
   family: Family | null;
+  members: UserRow[];
   defaultEmail: string;
 }) {
   const router = useRouter();
   const [editingName, setEditingName] = useState(false);
+  const [inviting, setInviting] = useState(false);
+
+  const isAdmin = me.role === "admin";
 
   async function onLogout() {
     const { createClient } = await import("@/lib/supabase/client");
@@ -67,7 +74,7 @@ export default function ProfileView({
 
       {family && (
         <>
-          <div className="section-label">Family</div>
+          <div className="section-label">Family Details</div>
           <div className="card mx-5 overflow-hidden">
             <Row leftIcon={<IconHome size={16} />} k="Family" v={family.name} />
             <Row
@@ -77,10 +84,39 @@ export default function ProfileView({
             />
             <Row
               leftIcon={<IconUserPlus size={16} />}
-              k="Invite members"
-              v=""
+              k="Members"
+              v={`${members.length}`}
               onTap={() => router.push("/app/family/members")}
+              rightIcon={<IconChevronRight size={14} />}
             />
+          </div>
+        </>
+      )}
+
+      {family && isAdmin && (
+        <>
+          <div className="mx-5 mt-3">
+            <button
+              type="button"
+              className="card w-full p-4 flex items-center gap-3 text-left"
+              style={{ borderColor: "var(--border)" }}
+              onClick={() => setInviting(true)}
+            >
+              <span className="text-[16px] t-secondary flex-shrink-0">
+                <IconLink size={16} />
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="text-[10.5px] font-bold t-tertiary uppercase tracking-[0.02em] mb-[3px]">
+                  Family Invite Link
+                </div>
+                <div className="text-[13.5px] font-semibold">
+                  Share link or code to invite members
+                </div>
+              </div>
+              <span className="text-[14px] t-tertiary flex-shrink-0">
+                <IconChevronRight size={14} />
+              </span>
+            </button>
           </div>
         </>
       )}
@@ -92,7 +128,7 @@ export default function ProfileView({
             <Row
               leftIcon={<IconTags size={16} />}
               k="Manage categories"
-              v=""
+              v="Reorder, rename or deactivate"
               onTap={() => router.push("/app/family/categories")}
               rightIcon={<IconChevronRight size={14} />}
             />
@@ -111,6 +147,14 @@ export default function ProfileView({
 
       {editingName && (
         <EditNameSheet current={me.name} onClose={() => setEditingName(false)} />
+      )}
+      {inviting && family && (
+        <InviteMembersSheet
+          familyName={family.name}
+          inviteCode={family.invite_code}
+          members={members}
+          onClose={() => setInviting(false)}
+        />
       )}
     </div>
   );
