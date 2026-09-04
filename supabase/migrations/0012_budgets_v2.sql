@@ -571,6 +571,7 @@ begin
           )
         group by t.category_id
       ) sp on sp.category_id = a.category_id
+      where a.budget_id = b.id
     ), '[]'::jsonb),
     'total_spent', coalesce((
       select sum(t.amount)
