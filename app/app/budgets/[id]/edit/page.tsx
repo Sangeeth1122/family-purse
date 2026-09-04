@@ -360,7 +360,7 @@ export default function BudgetEditPage() {
                         <IconChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-[14px] t-secondary pointer-events-none" size={16} />
                       </div>
                       <input
-                        className="input num w-24 py-2 text-sm"
+                        className="input num w-16 py-2 text-sm"
                         inputMode="decimal"
                         value={a.amount}
                         onChange={(e) => updateAllocation(i, "amount", toINRInput(e.target.value))}

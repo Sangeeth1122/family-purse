@@ -40,9 +40,6 @@ export default async function BudgetsPage() {
           <p className="text-[12.5px] font-semibold t-secondary leading-relaxed mx-auto max-w-[280px]">
             Create a monthly or project budget to start tracking your spending.
           </p>
-          {me?.role === "admin" && me?.family_id && (
-            <AddBudgetButton className="mt-4" />
-          )}
         </div>
       ) : (
         <div className="px-5 space-y-3 pt-2">

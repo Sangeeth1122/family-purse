@@ -222,19 +222,19 @@ export default function AddBudgetSheet({
   return (
     <div
       className="sheet-overlay"
-      onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="add-budget-title"
     >
-      <div className="sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="handle" />
-        <div className="sheet-head">
-          <h2 id="add-budget-title">{editing ? "Edit Budget" : "Create Budget"}</h2>
-          <button type="button" className="close-btn" aria-label="Close" onClick={onClose}>
-            <IconX size={16} />
-          </button>
-        </div>
+      <div className="sheet-wrap">
+        <button type="button" className="sheet-close-float" aria-label="Close" onClick={onClose}>
+          <IconX size={18} stroke={1.8} />
+        </button>
+        <div className="sheet">
+          <div className="handle" />
+          <div className="sheet-head">
+            <h2 id="add-budget-title">{editing ? "Edit Budget" : "Create Budget"}</h2>
+          </div>
 
         <form onSubmit={onSubmit}>
           <div className="field">
@@ -372,7 +372,7 @@ export default function AddBudgetSheet({
                           <IconChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-[14px] t-secondary pointer-events-none" size={16} />
                         </div>
                         <input
-                          className="input num w-24 py-2 text-sm"
+                          className="input num w-16 py-2 text-sm"
                           inputMode="decimal"
                           value={a.amount}
                           onChange={(e) => updateAllocation(i, "amount", toINRInput(e.target.value))}
@@ -413,6 +413,7 @@ export default function AddBudgetSheet({
             {busy ? "Saving…" : editing ? "Save Changes" : "Create Budget"}
           </button>
         </form>
+        </div>
       </div>
     </div>
   );
