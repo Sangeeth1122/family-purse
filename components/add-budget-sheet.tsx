@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useEsc } from "@/components/use-esc";
 import { useRouter } from "next/navigation";
-import { IconPlus, IconX, IconCalendar, IconFolderOpen, IconTrash } from "@tabler/icons-react";
+import { IconPlus, IconX, IconCalendar, IconFolderOpen, IconTrash, IconChevronDown } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatINR, parseINR, toINRInput } from "@/lib/format";
 import type { Category } from "@/lib/types";
@@ -23,6 +23,13 @@ function monthOptions() {
     opts.push({ value, label });
   }
   return opts;
+}
+
+function getMonthBounds(monthValue: string): { start: string; end: string } {
+  const [year, month] = monthValue.split("-").map(Number);
+  const start = `${year}-${String(month).padStart(2, "0")}-01`;
+  const end = new Date(year, month, 0).toISOString().slice(0, 10);
+  return { start, end };
 }
 
 export function AddBudgetButton({ className = "" }: { className?: string } = {}) {
@@ -58,13 +65,11 @@ export default function AddBudgetSheet({
   const [totalAmount, setTotalAmount] = useState(budget?.budget?.total_amount ? String(budget.budget.total_amount) : "");
   const [month, setMonth] = useState(budget?.budget?.start_date ? budget.budget.start_date.slice(0, 7) : "");
   const [projectId, setProjectId] = useState(budget?.budget?.project_id ?? "");
-  const [startDate, setStartDate] = useState(budget?.budget?.start_date ?? "");
-  const [endDate, setEndDate] = useState(budget?.budget?.end_date ?? "");
   const [allocations, setAllocations] = useState<{ id?: string; category_id: string; amount: string }[]>(
     budget?.allocations?.map((a) => ({ id: a.id, category_id: a.category_id, amount: String(a.amount) })) ?? [],
   );
   const [categories, setCategories] = useState<Category[]>([]);
-  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [projects, setProjects] = useState<{ id: string; name: string; created_at: string }[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showTypePicker, setShowTypePicker] = useState(false);
@@ -77,11 +82,11 @@ export default function AddBudgetSheet({
     (async () => {
       const [{ data: cats }, { data: projs }] = await Promise.all([
         supabase.from("categories").select("*").eq("system", false).order("sort_order"),
-        supabase.from("projects").select("id, name").eq("status", "active"),
+        supabase.from("projects").select("id, name, created_at").eq("status", "active"),
       ]);
       if (alive) {
         if (cats) setCategories(cats as Category[]);
-        if (projs) setProjects(projs as { id: string; name: string }[]);
+        if (projs) setProjects(projs as { id: string; name: string; created_at: string }[]);
       }
     })();
     return () => { alive = false; };
@@ -92,6 +97,16 @@ export default function AddBudgetSheet({
   const unallocated = totalAmountNum - allocatedTotal;
   const overAllocated = unallocated < 0;
 
+  function getProjectDates(projectId: string): { start: string; end: string } {
+    const project = projects.find((p) => p.id === projectId);
+    if (project) {
+      const start = project.created_at.slice(0, 10);
+      const end = "2099-12-31";
+      return { start, end };
+    }
+    return { start: "", end: "2099-12-31" };
+  }
+
   function validate(): string | null {
     if (!name.trim()) return "Enter a budget name.";
     if (totalAmountNum <= 0) return "Total budget must be greater than zero.";
@@ -99,14 +114,10 @@ export default function AddBudgetSheet({
       if (!month) return "Select a month.";
     } else {
       if (!projectId) return "Select a project.";
-      if (!startDate) return "Select a start date.";
-      if (!endDate) return "Select an end date.";
-      if (endDate < startDate) return "End date cannot be before start date.";
     }
     for (const a of allocations) {
       if (parseINR(a.amount) <= 0) return "Allocation amounts must be greater than zero.";
     }
-    // Check duplicate categories
     const cats = allocations.map((a) => a.category_id);
     if (new Set(cats).size !== cats.length) return "Same category cannot be added twice to the same budget.";
     return null;
@@ -132,7 +143,6 @@ export default function AddBudgetSheet({
           p_name: name.trim(),
           p_total_amount: totalAmountNum,
         });
-        // Update allocations
         for (const a of allocations) {
           if (a.id) {
             await supabase.rpc("fp_update_budget_allocation", {
@@ -147,7 +157,6 @@ export default function AddBudgetSheet({
             });
           }
         }
-        // Remove deleted allocations
         const existingIds = budget?.allocations?.map((a) => a.id) ?? [];
         const keptIds = allocations.filter((a) => a.id).map((a) => a.id!);
         for (const id of existingIds) {
@@ -156,10 +165,16 @@ export default function AddBudgetSheet({
           }
         }
       } else {
-        const start = type === "monthly" ? `${month}-01` : startDate;
-        const end = type === "monthly"
-          ? new Date(new Date(`${month}-01`).getFullYear(), new Date(`${month}-01`).getMonth() + 1, 0).toISOString().slice(0, 10)
-          : endDate;
+        let start: string, end: string;
+        if (type === "monthly") {
+          const bounds = getMonthBounds(month);
+          start = bounds.start;
+          end = bounds.end;
+        } else {
+          const bounds = getProjectDates(projectId);
+          start = bounds.start;
+          end = bounds.end;
+        }
         const { data, error: err } = await supabase.rpc("fp_create_budget", {
           p_name: name.trim(),
           p_type: type,
@@ -188,9 +203,7 @@ export default function AddBudgetSheet({
   }
 
   function addAllocation() {
-    const available = categories.filter(
-      (c) => !allocations.some((a) => a.category_id === c.id),
-    );
+    const available = categories.filter((c) => !allocations.some((a) => a.category_id === c.id));
     if (available.length > 0) {
       setAllocations([...allocations, { category_id: available[0].id, amount: "" }]);
     }
@@ -235,7 +248,7 @@ export default function AddBudgetSheet({
                 <span>
                   {BUDGET_TYPES.find((t) => t.value === type)?.label}
                 </span>
-                <IconPlus size={15} className="t-secondary" style={{ transform: showTypePicker ? "rotate(45deg)" : "none" }} />
+                <IconChevronDown size={15} className="t-secondary" style={{ transform: showTypePicker ? "rotate(180deg)" : "none" }} />
               </span>
             </button>
             {showTypePicker && (
@@ -290,42 +303,20 @@ export default function AddBudgetSheet({
           )}
 
           {type === "project" && (
-            <>
-              <div className="field">
-                <span className="field-label">Project</span>
-                <select
-                  className="input"
-                  value={projectId}
-                  onChange={(e) => setProjectId(e.target.value)}
-                  required
-                >
-                  <option value="">Select project</option>
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <span className="field-label">Start Date</span>
-                <input
-                  className="input"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="field">
-                <span className="field-label">End Date</span>
-                <input
-                  className="input"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  required
-                />
-              </div>
-            </>
+            <div className="field">
+              <span className="field-label">Project</span>
+              <select
+                className="input"
+                value={projectId}
+                onChange={(e) => setProjectId(e.target.value)}
+                required
+              >
+                <option value="">Select project</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
           )}
 
           <div className="field">
@@ -360,25 +351,28 @@ export default function AddBudgetSheet({
               </button>
             ) : (
               <>
-                <div className="flex flex-wrap gap-2 mb-2">
+                <div className="flex flex-col gap-2 mb-2">
                   {allocations.map((a, i) => {
                     const cat = categories.find((c) => c.id === a.category_id);
                     return (
-                      <div key={i} className="flex items-center gap-2 p-2 rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
+                      <div key={i} className="flex items-center gap-2 p-2.5 rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
                         <span className="dot" style={{ background: cat?.color ?? "#888" }} />
-                        <select
-                          className="input flex-1 py-1.5 text-sm"
-                          value={a.category_id}
-                          onChange={(e) => updateAllocation(i, "category_id", e.target.value)}
-                        >
-                          {categories
-                            .filter((c) => !allocations.some((aa, ii) => ii !== i && aa.category_id === c.id) || c.id === a.category_id)
-                            .map((c) => (
-                              <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                        </select>
+                        <div className="relative flex-1 min-w-0">
+                          <select
+                            className="category-select input w-full py-2 text-sm appearance-none"
+                            value={a.category_id}
+                            onChange={(e) => updateAllocation(i, "category_id", e.target.value)}
+                          >
+                            {categories
+                              .filter((c) => !allocations.some((aa, ii) => ii !== i && aa.category_id === c.id) || c.id === a.category_id)
+                              .map((c) => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                              ))}
+                          </select>
+                          <IconChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-[14px] t-secondary pointer-events-none" size={16} />
+                        </div>
                         <input
-                          className="input num w-24 py-1.5 text-sm"
+                          className="input num w-24 py-2 text-sm"
                           inputMode="decimal"
                           value={a.amount}
                           onChange={(e) => updateAllocation(i, "amount", toINRInput(e.target.value))}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { redirect } from "next/navigation";
-import { IconWallet, IconCalendar, IconFolderOpen, IconLock, IconPencil, IconTrash, IconArrowLeft, IconPlus, IconX } from "@tabler/icons-react";
+import { IconWallet, IconCalendar, IconFolderOpen, IconLock, IconPencil, IconTrash, IconArrowLeft, IconPlus, IconX, IconChevronDown } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatINR, parseINR, toINRInput } from "@/lib/format";
 import type { Category } from "@/lib/types";
@@ -26,6 +26,13 @@ function monthOptions() {
   return opts;
 }
 
+function getMonthBounds(monthValue: string): { start: string; end: string } {
+  const [year, month] = monthValue.split("-").map(Number);
+  const start = `${year}-${String(month).padStart(2, "0")}-01`;
+  const end = new Date(year, month, 0).toISOString().slice(0, 10);
+  return { start, end };
+}
+
 export default function BudgetEditPage() {
   const router = useRouter();
   const params = useParams();
@@ -43,18 +50,16 @@ export default function BudgetEditPage() {
     active: boolean;
   } | null>(null);
   const [allocations, setAllocations] = useState<{ id?: string; category_id: string; amount: string }[]>([]);
+  const [existingAllocationIds, setExistingAllocationIds] = useState<string[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [projects, setProjects] = useState<{ id: string; name: string; created_at: string }[]>([]);
   const [name, setName] = useState("");
   const [type, setType] = useState<"monthly" | "project">("monthly");
   const [totalAmount, setTotalAmount] = useState("");
   const [month, setMonth] = useState("");
   const [projectId, setProjectId] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showTypePicker, setShowTypePicker] = useState(false);
 
   useEsc(true, () => router.back());
 
@@ -65,12 +70,12 @@ export default function BudgetEditPage() {
       const [{ data: meRes }, { data: cats }, { data: projs }] = await Promise.all([
         supabase.from("users").select("role").eq("id", (await supabase.auth.getUser()).data.user?.id).maybeSingle(),
         supabase.from("categories").select("*").eq("system", false).order("sort_order"),
-        supabase.from("projects").select("id, name").eq("status", "active"),
+        supabase.from("projects").select("id, name, created_at").eq("status", "active"),
       ]);
       if (alive) {
         if (meRes) setMe(meRes as { role: string });
         if (cats) setCategories(cats as Category[]);
-        if (projs) setProjects(projs as { id: string; name: string }[]);
+        if (projs) setProjects(projs as { id: string; name: string; created_at: string }[]);
       }
     })();
     return () => { alive = false; };
@@ -112,10 +117,9 @@ export default function BudgetEditPage() {
           setMonth(detail.budget.start_date.slice(0, 7));
         } else {
           setProjectId(detail.budget.project_id ?? "");
-          setStartDate(detail.budget.start_date);
-          setEndDate(detail.budget.end_date);
         }
         setAllocations(detail.allocations.map((a) => ({ id: a.id, category_id: a.category_id, amount: String(a.amount) })));
+        setExistingAllocationIds(detail.allocations.map((a) => a.id));
         setLoading(false);
       }
     })();
@@ -134,9 +138,6 @@ export default function BudgetEditPage() {
       if (!month) return "Select a month.";
     } else {
       if (!projectId) return "Select a project.";
-      if (!startDate) return "Select a start date.";
-      if (!endDate) return "Select an end date.";
-      if (endDate < startDate) return "End date cannot be before start date.";
     }
     for (const a of allocations) {
       if (parseINR(a.amount) <= 0) return "Allocation amounts must be greater than zero.";
@@ -176,7 +177,7 @@ export default function BudgetEditPage() {
           });
         }
       }
-      const existingIds = allocations.filter((a) => a.id).map((a) => a.id!);
+      const existingIds = existingAllocationIds;
       const keptIds = allocations.filter((a) => a.id).map((a) => a.id!);
       for (const aid of existingIds) {
         if (!keptIds.includes(aid)) {
@@ -289,42 +290,21 @@ export default function BudgetEditPage() {
         )}
 
         {type === "project" && (
-          <>
-            <div className="field">
-              <span className="field-label">Project</span>
-              <select
-                className="input"
-                value={projectId}
-                onChange={(e) => setProjectId(e.target.value)}
-                required
-              >
-                <option value="">Select project</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <span className="field-label">Start Date</span>
-              <input
-                className="input"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                required
-              />
-            </div>
-            <div className="field">
-              <span className="field-label">End Date</span>
-              <input
-                className="input"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                required
-              />
-            </div>
-          </>
+          <div className="field">
+            <span className="field-label">Project</span>
+            <select
+              className="input"
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              required
+              disabled
+            >
+              <option value="">Select project</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
         )}
 
         <div className="field">
@@ -359,25 +339,28 @@ export default function BudgetEditPage() {
             </button>
           ) : (
             <>
-              <div className="flex flex-wrap gap-2 mb-2">
+              <div className="flex flex-col gap-2 mb-2">
                 {allocations.map((a, i) => {
                   const cat = categories.find((c) => c.id === a.category_id);
                   return (
-                    <div key={i} className="flex items-center gap-2 p-2 rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
+                    <div key={i} className="flex items-center gap-2 p-2.5 rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
                       <span className="dot" style={{ background: cat?.color ?? "#888" }} />
-                      <select
-                        className="input flex-1 py-1.5 text-sm"
-                        value={a.category_id}
-                        onChange={(e) => updateAllocation(i, "category_id", e.target.value)}
-                      >
-                        {categories
-                          .filter((c) => !allocations.some((aa, ii) => ii !== i && aa.category_id === c.id) || c.id === a.category_id)
-                          .map((c) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                          ))}
-                      </select>
+                      <div className="relative flex-1 min-w-0">
+                        <select
+                          className="category-select input w-full py-2 text-sm appearance-none"
+                          value={a.category_id}
+                          onChange={(e) => updateAllocation(i, "category_id", e.target.value)}
+                        >
+                          {categories
+                            .filter((c) => !allocations.some((aa, ii) => ii !== i && aa.category_id === c.id) || c.id === a.category_id)
+                            .map((c) => (
+                              <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                        <IconChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-[14px] t-secondary pointer-events-none" size={16} />
+                      </div>
                       <input
-                        className="input num w-24 py-1.5 text-sm"
+                        className="input num w-24 py-2 text-sm"
                         inputMode="decimal"
                         value={a.amount}
                         onChange={(e) => updateAllocation(i, "amount", toINRInput(e.target.value))}
