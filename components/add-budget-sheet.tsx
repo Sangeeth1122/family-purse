@@ -28,7 +28,8 @@ function monthOptions() {
 function getMonthBounds(monthValue: string): { start: string; end: string } {
   const [year, month] = monthValue.split("-").map(Number);
   const start = `${year}-${String(month).padStart(2, "0")}-01`;
-  const end = new Date(year, month, 0).toISOString().slice(0, 10);
+  const lastDay = new Date(year, month, 0);
+  const end = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, "0")}-${String(lastDay.getDate()).padStart(2, "0")}`;
   return { start, end };
 }
 
