@@ -51,13 +51,20 @@ export default function TransactionDetailView({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isTransferOut = txn.type === "transfer" && txn.scope_id === txn.created_by;
+  const isTransferIn = txn.type === "transfer" && txn.scope_id !== txn.created_by;
+
   const isOut =
     txn.type === "expense" ||
     txn.type === "interest_expense" ||
     txn.type === "card_payment" ||
     txn.type === "loan_repayment" ||
-    (txn.type === "transfer" && txn.counterparty_user_id === null);
-  const isIn = txn.type === "revenue" || txn.type === "interest_income";
+    (txn.type === "transfer" && txn.counterparty_user_id === null) ||
+    isTransferOut;
+  const isIn =
+    txn.type === "revenue" ||
+    txn.type === "interest_income" ||
+    isTransferIn;
   const isPairedTransfer =
     txn.kind === "settlement" && txn.type === "transfer" && txn.counterparty_user_id !== null;
 
@@ -93,7 +100,9 @@ export default function TransactionDetailView({
   // engine (RPCs) re-enforces them server-side.
   const ownerEdit =
     txn.kind === "pl" && txn.scope_type === "personal" && isYou;
-  const canEdit = txn.kind === "pl" ? ownerEdit || isAdmin : isAdmin;
+  const ownerTransfer = txn.type === "transfer" && isYou;
+  const canEdit = txn.kind === "pl" ? ownerEdit || isAdmin : ownerTransfer || isAdmin;
+  const canDelete = cancellable || ownerTransfer || isAdmin;
 
   return (
     <div className="min-h-screen pb-8">
@@ -133,7 +142,7 @@ export default function TransactionDetailView({
           {isOut ? "−" : isIn ? "+" : ""} {txn.amount_formatted}
         </span>
         <span className="text-[15px] font-semibold t-secondary mt-1.5">
-          {txn.note || TYPE_LABEL[txn.type] || txn.type}
+          {txn.note || (isTransferOut ? `Transfer to ${counterpartyName}` : isTransferIn ? `Transfer from ${counterpartyName}` : TYPE_LABEL[txn.type] || txn.type)}
         </span>
       </div>
 
@@ -178,6 +187,12 @@ export default function TransactionDetailView({
           />
         )}
         <Row k="Added by" v={isYou ? "You" : creatorName} avatar={!isYou ? initialAvatar : null} />
+        {txn.updated_at && (
+          <Row
+            k="Last edited"
+            v={`${formatFullDate(txn.updated_at.slice(0, 10))}, ${formatTime(txn.updated_at)}`}
+          />
+        )}
       </div>
 
       {isPairedTransfer && (
@@ -205,7 +220,7 @@ export default function TransactionDetailView({
           type="button"
           className="btn btn-danger flex-1"
           onClick={() => setConfirmDelete(true)}
-          disabled={!cancellable}
+          disabled={!canDelete}
         >
           <IconTrash size={16} /> Delete
         </button>
@@ -216,10 +231,9 @@ export default function TransactionDetailView({
         )}
       </div>
 
-      {txn.kind === "settlement" && !isAdmin && (
+      {txn.kind === "settlement" && txn.type !== "transfer" && !isAdmin && (
         <p className="text-center text-[11.5px] font-semibold t-tertiary mt-3">
-          Settlement entries (card payments, loan repayments, transfers) are managed by the family
-          admin.
+          Card payments and loan repayments are managed by the family admin.
         </p>
       )}
 

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatINR } from "@/lib/format";
 import { summarizeMonth, reportTransactions } from "@/lib/report";
 import RemindersBell from "@/components/reminders/reminders-panel";
-import type { Category, Reminder, Transaction, UserRow, LegacyBudget } from "@/lib/types";
+import type { Category, Reminder, Transaction, UserRow, Budget } from "@/lib/types";
 
 function monthBounds(d = new Date()) {
   const from = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
@@ -47,22 +47,25 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [membersRes, catsRes, txnsRes, budgetsRes, remindersRes] = await Promise.all([
+  const [membersRes, catsRes, txnsRes, budgetsRes, allocsRes, remindersRes, billsRes] = await Promise.all([
     supabase.from("users").select("*").order("created_at"),
     supabase.from("categories").select("*").order("sort_order"),
     supabase.from("transactions").select("*"),
-    supabase.from("budgets").select("*"),
-    supabase.from("reminders").select("*").eq("status", "pending").order("due_date").limit(5),
+    supabase.rpc("fp_list_budgets", { p_active_only: true }),
+    supabase.from("budget_category_allocations").select("*"),
+    supabase.from("reminders").select("*").eq("status", "pending").order("due_date"),
+    supabase.from("recurring_bills").select("*").eq("active", true),
   ]);
 
-  if (membersRes.error || catsRes.error || txnsRes.error || budgetsRes.error || remindersRes.error)
+  if (membersRes.error || catsRes.error || txnsRes.error)
     throw new Error("Could not load your dashboard.");
 
   const members = (membersRes.data ?? []) as UserRow[];
   const categories = (catsRes.data ?? []) as Category[];
   const allTxns = (txnsRes.data ?? []) as Transaction[];
-  const budgets = (budgetsRes.data ?? []) as LegacyBudget[];
-  const reminders = (remindersRes.data ?? []) as Reminder[];
+  const activeBudgets = (budgetsRes.data ?? []) as (Budget & { total_spent: number; total_allocated: number })[];
+  const rawReminders = (remindersRes.data ?? []) as Reminder[];
+  const recurringBills = (billsRes.data ?? []) as { id: string; name: string; amount: number; due_day: number; category_id: string | null }[];
 
   // Dashboard month. Normally the current calendar month; when it has no
   // transactions (e.g. the month just rolled over and the family's canonical
@@ -102,9 +105,29 @@ export default async function DashboardPage() {
       : Number(to.slice(-2));
   const daysInMonth = Number(to.slice(-2));
 
-  // Personal budget pace for the signed-in user.
-  const myBudgets = budgets.filter((b) => b.scope_type === "personal" && b.scope_id === user.id);
-  const catBudgetMap = new Map(myBudgets.map((b) => [b.category_id, b.amount]));
+  // Synchronized Budget Pace: Find the active family monthly budget for this period
+  const monthKey = bounds.from.slice(0, 7);
+  const activeBudget =
+    activeBudgets.find((b) => b.type === "monthly" && b.active && b.start_date.startsWith(monthKey)) ||
+    activeBudgets.find((b) => b.type === "monthly" && b.active) ||
+    activeBudgets[0] ||
+    null;
+
+  // Calculate Rollover Fund from the immediately preceding month
+  const prevMonthKey = prevBounds.from.slice(0, 7);
+  const prevBudget = activeBudgets.find(
+    (b) => b.type === "monthly" && b.start_date.startsWith(prevMonthKey),
+  );
+  const rolloverSurplus =
+    prevBudget && prevBudget.total_amount > (prevBudget.total_spent ?? 0)
+      ? Math.round(prevBudget.total_amount - (prevBudget.total_spent ?? 0))
+      : 0;
+
+  const budgetAllocations = ((allocsRes.data ?? []) as { budget_id: string; category_id: string; amount: number }[]).filter(
+    (a) => a.budget_id === activeBudget?.id,
+  );
+  const catBudgetMap = new Map(budgetAllocations.map((a) => [a.category_id, a.amount]));
+
   const pace = categories
     .filter((c) => catBudgetMap.has(c.id))
     .map((c) => ({
@@ -114,14 +137,73 @@ export default async function DashboardPage() {
         report.byCategory.find((r) => r.categoryId === c.id)?.amount ?? 0,
     }))
     .sort((a, b) => b.spent / b.budget - a.spent / a.budget);
-  const paceTotal = pace.reduce((s, p) => s + p.spent, 0);
-  const budgetTotal = pace.reduce((s, p) => s + (p.budget ?? 0), 0);
+
+  const budgetTotal = activeBudget ? activeBudget.total_amount + rolloverSurplus : pace.reduce((s, p) => s + p.budget, 0);
+  const paceTotal = activeBudget ? activeBudget.total_spent : pace.reduce((s, p) => s + p.spent, 0);
 
   const topMover = pace.find((p) => p.spent > 0);
   const moverDelta =
     topMover != null
       ? topMover.spent - (prevReport.byCategory.find((c) => c.categoryId === topMover.category.id)?.amount ?? 0)
       : 0;
+
+  // Compile active reminders + proactive budget threshold alerts + recurring bills
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const dynamicAlerts: Reminder[] = [];
+
+  // 1. Budget Alerts: warn if family budget or any category exceeds 85%
+  if (activeBudget && budgetTotal > 0) {
+    const totalPct = (paceTotal / budgetTotal) * 100;
+    if (totalPct >= 85) {
+      dynamicAlerts.push({
+        id: `alert-budget-${activeBudget.id}`,
+        loan_id: null,
+        card_id: null,
+        category_id: null,
+        due_date: todayStr,
+        status: "pending",
+        type: "budget_threshold",
+        title: `${activeBudget.name}: ${Math.round(totalPct)}% used (${formatINR(paceTotal)} of ${formatINR(budgetTotal)})`,
+        amount: Math.max(0, budgetTotal - paceTotal),
+      });
+    }
+  }
+  for (const p of pace) {
+    if (p.budget > 0 && p.spent >= p.budget * 0.9) {
+      dynamicAlerts.push({
+        id: `alert-cat-${p.category.id}`,
+        loan_id: null,
+        card_id: null,
+        category_id: p.category.id,
+        due_date: todayStr,
+        status: "pending",
+        type: "budget_threshold",
+        title: `${p.category.name} at ${Math.round((p.spent / p.budget) * 100)}% of allocation`,
+        amount: Math.max(0, p.budget - p.spent),
+      });
+    }
+  }
+
+  // 2. Recurring bills dues
+  const curY = new Date().getFullYear();
+  const curM = String(new Date().getMonth() + 1).padStart(2, "0");
+  for (const bill of recurringBills) {
+    const dueDay = Math.min(bill.due_day, 28);
+    const billDueDate = `${curY}-${curM}-${String(dueDay).padStart(2, "0")}`;
+    dynamicAlerts.push({
+      id: `bill-${bill.id}`,
+      loan_id: null,
+      card_id: null,
+      category_id: bill.category_id,
+      due_date: billDueDate,
+      status: "pending",
+      type: "card_payment_due",
+      title: `Recurring: ${bill.name}`,
+      amount: bill.amount,
+    });
+  }
+
+  const reminders = [...rawReminders, ...dynamicAlerts];
 
   return (
     <div className="min-h-screen leading-[1.2]">
@@ -168,14 +250,17 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Budget pace (mockup: padding 14px, 6px red track, 12px note) */}
-      {pace.length > 0 && (
+      {/* Budget pace (synchronized with active family monthly budget) */}
+      {(activeBudget != null || pace.length > 0) && (
         <div className="card p-3.5 mb-2.5">
           <Link href="/app/budgets" className="block">
             <div className="flex items-center justify-between mb-1.5 text-[12px] font-semibold">
-              <span className="t-secondary">Personal budget pace</span>
+              <span className="t-secondary">
+                {activeBudget ? `${activeBudget.name} pace` : "Budget pace"}
+              </span>
               <span className="t-primary num">
                 {formatINR(paceTotal)} / {budgetTotal.toLocaleString("en-IN")}
+                {rolloverSurplus > 0 ? " (+rollover)" : ""}
               </span>
             </div>
             <div

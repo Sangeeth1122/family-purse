@@ -15,6 +15,8 @@ export type TxnRowDatum = {
   showCreator?: boolean;
   /** Balance-reducing entry shown as a green "+" (card payments, write-offs). */
   reduceBalance?: boolean;
+  /** Explicit outflow/inflow indicator (e.g. transfers between family members). */
+  direction?: "out" | "in" | "neutral";
 };
 
 export default function TransactionRow({
@@ -26,8 +28,8 @@ export default function TransactionRow({
   href?: string;
   sign?: "auto" | "out" | "in" | "neutral";
 }) {
-  const derivedOut = t.type === "expense" || t.type === "interest_expense";
-  const derivedIn = t.type === "revenue" || t.type === "interest_income";
+  const derivedOut = t.type === "expense" || t.type === "interest_expense" || t.direction === "out";
+  const derivedIn = t.type === "revenue" || t.type === "interest_income" || t.direction === "in";
   const isOut = sign === "out" ? true : sign === "in" ? false : derivedOut;
   const isIn = sign === "in" ? true : sign === "out" ? false : derivedIn;
   const neutral = !isOut && !isIn;

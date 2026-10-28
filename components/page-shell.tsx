@@ -12,6 +12,7 @@ import {
   IconScale,
   IconFolderOpen,
   IconWallet,
+  IconBuildingBank,
 } from "@tabler/icons-react";
 import AddTransactionSheet from "@/components/add-transaction-sheet";
 
@@ -30,7 +31,8 @@ export default function PageShell({ children }: { children: React.ReactNode }) {
         : pathname.startsWith("/app/cards") ||
             pathname.startsWith("/app/loans") ||
             pathname.startsWith("/app/projects") ||
-            pathname.startsWith("/app/budgets")
+            pathname.startsWith("/app/budgets") ||
+            pathname.startsWith("/app/accounts")
           ? "manage"
           : pathname.startsWith("/app/profile")
             ? "profile"
@@ -146,6 +148,17 @@ export default function PageShell({ children }: { children: React.ReactNode }) {
                     >
                       <IconWallet size={17} stroke={1.8} />
                       Budgets
+                    </button>
+                    <button
+                      type="button"
+                      className="manage-menu-item"
+                      onClick={() => {
+                        setManageOpen(false);
+                        router.push("/app/accounts");
+                      }}
+                    >
+                      <IconBuildingBank size={17} stroke={1.8} />
+                      Accounts
                     </button>
                   </div>
                 )}

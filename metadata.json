@@ -1,0 +1,8 @@
+{
+  "name": "Family Purse",
+  "description": "Shared family expense tracking — budgets, cards, loans and reports for everyone in the family.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

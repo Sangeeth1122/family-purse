@@ -138,6 +138,8 @@ export default async function ProjectDetailPage({
       via: t.spent_through === "credit_card" ? "Credit Card" : "Manual",
       isExpense,
       amount: t.amount,
+      creatorId: t.created_by,
+      creatorName: users.find((u) => u.id === t.created_by)?.name ?? "Family member",
     };
   });
 

@@ -21,7 +21,10 @@ export type Transaction = {
   counterparty_user_id: string | null;
   linked_loan_id: string | null;
   transfer_group_id: string | null;
+  account_id?: string | null;
   created_at: string;
+  updated_at?: string;
+  updated_by?: string | null;
 };
 
 export type Category = {
@@ -72,6 +75,7 @@ export type BudgetListItem = {
   created_at: string;
   total_spent: number;
   total_allocated: number;
+  rollover_amount?: number;
 };
 
 export type BudgetAllocation = {
@@ -89,6 +93,35 @@ export type BudgetDetail = {
   budget: Budget;
   allocations: (BudgetAllocation & { category_name: string; category_color: string; spent: number })[];
   total_spent: number;
+  rollover_amount?: number;
+};
+
+export type AccountType = "bank" | "savings" | "cash" | "wallet";
+
+export type Account = {
+  id: string;
+  family_id: string;
+  user_id: string | null;
+  name: string;
+  type: AccountType;
+  opening_balance: number;
+  status: "active" | "closed";
+  created_at: string;
+  updated_at: string;
+};
+
+export type RecurringBill = {
+  id: string;
+  family_id: string;
+  name: string;
+  amount: number;
+  category_id: string | null;
+  due_day: number;
+  frequency: "monthly" | "weekly" | "yearly";
+  active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type UserRow = {

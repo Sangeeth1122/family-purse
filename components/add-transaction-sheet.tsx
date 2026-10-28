@@ -1050,12 +1050,20 @@ export default function AddTransactionSheet({
               </div>
 
               <label className="field">
-                <span className="field-label">Note (optional)</span>
+                <span className="field-label">
+                  {tab === "transfer" && subTab === "person"
+                    ? "Reason for transfer (note)"
+                    : "Note (optional)"}
+                </span>
                 <input
                   className="input"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="What was this for?"
+                  placeholder={
+                    tab === "transfer" && subTab === "person"
+                      ? "e.g. Allowance, grocery reimbursement, rent share"
+                      : "What was this for?"
+                  }
                 />
               </label>
 

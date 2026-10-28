@@ -1,4 +1,4 @@
-import type { Card, Loan, Transaction } from "@/lib/types";
+import type { Account, Card, Loan, Transaction } from "@/lib/types";
 
 /**
  * Phase 2 — balance derivations. Every figure is computed from the frozen
@@ -147,4 +147,39 @@ export function settlementOutflows(txns: Transaction[]): Transaction[] {
   return txns.filter(
     (t) => t.kind === "settlement" && (t.type === "card_payment" || t.type === "loan_repayment"),
   );
+}
+
+/**
+ * Account balances (bank accounts, cash, savings).
+ * account_balance = opening_balance + inflows (revenue, interest_income)
+ *                  - outflows (expenses, card payments, loan repayments)
+ *                  - transfers out + transfers in.
+ */
+export function accountBalances(
+  accounts: Account[],
+  txns: Transaction[],
+): Map<string, number> {
+  const map = new Map<string, number>(accounts.map((a) => [a.id, a.opening_balance]));
+  for (const t of txns) {
+    if (t.account_id && map.has(t.account_id)) {
+      if (t.type === "revenue" || t.type === "interest_income") {
+        map.set(t.account_id, (map.get(t.account_id) ?? 0) + t.amount);
+      } else if (
+        t.type === "expense" ||
+        t.type === "interest_expense" ||
+        t.type === "card_payment" ||
+        t.type === "loan_repayment"
+      ) {
+        map.set(t.account_id, (map.get(t.account_id) ?? 0) - t.amount);
+      } else if (t.type === "transfer") {
+        if (t.scope_id === t.created_by) {
+          map.set(t.account_id, (map.get(t.account_id) ?? 0) - t.amount);
+        } else {
+          map.set(t.account_id, (map.get(t.account_id) ?? 0) + t.amount);
+        }
+      }
+    }
+  }
+  for (const [k, v] of map) map.set(k, round2(v));
+  return map;
 }

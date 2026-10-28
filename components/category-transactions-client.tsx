@@ -33,15 +33,28 @@ export default function CategoryTransactionsClient({
   budgetAmount: number | null;
 }) {
   const [filter, setFilter] = useState<Filter>("month");
+  const [searchQuery, setSearchQuery] = useState("");
   const now = new Date();
   const cur = monthKeyBounds(now);
   const prevBounds = monthKeyBounds(new Date(now.getFullYear(), now.getMonth() - 1, 1));
 
   const shown = useMemo(() => {
-    if (filter === "month") return rows.filter((r) => r.date >= cur.from && r.date <= cur.to);
-    if (filter === "prev") return rows.filter((r) => r.date >= prevBounds.from && r.date <= prevBounds.to);
-    return rows;
-  }, [filter, rows, cur.from, cur.to, prevBounds.from, prevBounds.to]);
+    let list = rows;
+    if (filter === "month") list = rows.filter((r) => r.date >= cur.from && r.date <= cur.to);
+    else if (filter === "prev") list = rows.filter((r) => r.date >= prevBounds.from && r.date <= prevBounds.to);
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(
+        (r) =>
+          r.note?.toLowerCase().includes(q) ||
+          r.categoryName?.toLowerCase().includes(q) ||
+          r.creatorName?.toLowerCase().includes(q) ||
+          String(r.amount).includes(q)
+      );
+    }
+    return list;
+  }, [filter, rows, cur.from, cur.to, prevBounds.from, prevBounds.to, searchQuery]);
 
   const monthSpent = rows
     .filter((r) => r.date >= cur.from && r.date <= cur.to)
@@ -111,6 +124,17 @@ export default function CategoryTransactionsClient({
             {f.label}
           </button>
         ))}
+      </div>
+
+      <div className="px-5 pt-3">
+        <input
+          type="text"
+          className="input"
+          placeholder="Search note, category, or amount…"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{ padding: "9px 12px", fontSize: "13.5px" }}
+        />
       </div>
 
       <div className="px-5 mt-1 pb-4">

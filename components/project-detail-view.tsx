@@ -32,6 +32,8 @@ export type ProjectTxnRow = {
   via: string;
   isExpense: boolean;
   amount: number;
+  creatorId?: string;
+  creatorName?: string;
 };
 
 export type ProjectCatBudget = {
@@ -96,6 +98,21 @@ export default function ProjectDetailView({
 
   const canManageMembers = (myRole === "owner" || isAdmin) && project.status === "active";
   const canAddTxn = myRole !== null && myRole !== "viewer" && project.status === "active";
+
+  const activeMembersCount = Math.max(people.length, 1);
+  const fairShare = Math.round(spent / activeMembersCount);
+  const memberContributions = people.map((p) => {
+    const paid = txnRows
+      .filter((r) => r.isExpense && r.creatorId === p.user_id)
+      .reduce((s, r) => s + r.amount, 0);
+    const balance = Math.round(paid - fairShare);
+    return {
+      userId: p.user_id,
+      name: p.name,
+      paid,
+      balance,
+    };
+  });
 
   const memberSetList: ProjectMember[] = people.map((p) => ({
     project_id: project.id,
@@ -348,6 +365,53 @@ export default function ProjectDetailView({
                 </div>
               );
             })}
+          </div>
+        </>
+      )}
+
+      {/* ---------- Settlement breakdown analytics ---------- */}
+      {spent > 0 && people.length > 0 && (
+        <>
+          <div className="section-label">Settlement breakdown</div>
+          <div className="card mx-5 p-4 space-y-3">
+            <div
+              className="flex items-center justify-between text-[12px] font-semibold t-secondary border-b pb-2"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <span>
+                Total spent: <b className="t-primary num">{formatINRExact(spent)}</b>
+              </span>
+              <span>
+                Fair share: <b className="t-primary num">{formatINRExact(fairShare)}</b> / person
+              </span>
+            </div>
+            {memberContributions.map((m) => (
+              <div key={m.userId} className="flex items-center justify-between text-[13px]">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className="avatar shrink-0"
+                    style={{ width: 22, height: 22, fontSize: 9 }}
+                  >
+                    {initials(m.name)}
+                  </span>
+                  <span className="font-bold truncate">{m.name}</span>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="font-bold num t-primary">{formatINRExact(m.paid)}</span>
+                  <span
+                    className={`block text-[11px] font-semibold num ${
+                      m.balance > 0 ? "t-green" : m.balance < 0 ? "t-red" : "t-secondary"
+                    }`}
+                  >
+                    {m.balance > 0
+                      ? `+${formatINRExact(m.balance)} (to receive)`
+                      : m.balance < 0
+                        ? `−${formatINRExact(Math.abs(m.balance))} (owes)`
+                        : "settled"}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         </>
       )}

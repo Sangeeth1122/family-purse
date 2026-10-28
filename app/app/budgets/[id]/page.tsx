@@ -55,6 +55,32 @@ export default async function BudgetDetailPage({ params }: { params: Promise<{ i
   const allocatedTotal = allocations.reduce((s, a) => s + a.amount, 0);
   const unallocated = budget.total_amount - allocatedTotal;
 
+  // Rollover fund calculation from previous month
+  let rolloverAmount = 0;
+  if (budget.type === "monthly") {
+    const { data: prevBudget } = await supabase
+      .from("budgets")
+      .select("id, total_amount, start_date, end_date")
+      .eq("type", "monthly")
+      .eq("active", true)
+      .lt("start_date", budget.start_date)
+      .order("start_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (prevBudget) {
+      const { data: prevSpentData } = await supabase
+        .from("transactions")
+        .select("amount")
+        .eq("kind", "pl")
+        .in("type", ["expense", "interest_expense"])
+        .gte("date", prevBudget.start_date)
+        .lte("date", prevBudget.end_date);
+      const prevSpent = (prevSpentData ?? []).reduce((s: number, t: { amount: number }) => s + t.amount, 0);
+      rolloverAmount = Math.max(0, Math.round(prevBudget.total_amount - prevSpent));
+    }
+  }
+
   return (
     <div className="min-h-screen pb-24">
       <div className="flex items-center justify-between px-5 pt-5 pb-4">
@@ -90,6 +116,7 @@ export default async function BudgetDetailPage({ params }: { params: Promise<{ i
           </div>
           <div className="text-[13px] font-semibold t-tertiary mt-1">
             of {formatINR(budget.total_amount)} total budget
+            {rolloverAmount > 0 && ` (+${formatINR(rolloverAmount)} rollover)`}
           </div>
         </div>
 
@@ -113,6 +140,7 @@ export default async function BudgetDetailPage({ params }: { params: Promise<{ i
         {allocatedTotal > 0 && (
           <div className="text-[11px] font-semibold t-tertiary text-center mb-4">
             {formatINR(allocatedTotal)} allocated · {formatINR(unallocated)} unallocated
+            {rolloverAmount > 0 && ` · ${formatINR(rolloverAmount)} rolled over from last month`}
           </div>
         )}
       </div>
